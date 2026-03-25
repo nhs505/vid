@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verse Identification</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0d2e1b; margin: 0; display: flex; height: 100vh; color: #333; overflow: hidden; }
+        #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d2e1b; display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-box { background: #c4d0c1; padding: 40px; border-radius: 8px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .login-box h2 { margin-top: 0; color: #0b2e4f; }
+        .login-box input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+        .login-box button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 5px; font-size: 1em; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .login-box button:hover { background: #1557b0; }
+        #mainApp { display: none; width: 100%; flex-direction: row; height: 100%; }
+        .sidebar { width: 250px; background: #1b432a; color: white; padding: 20px; overflow-y: auto; box-shadow: 2px 0 5px rgba(0,0,0,0.2); }
+        .sidebar h3 { border-bottom: 2px solid #4CAF50; padding-bottom: 10px; margin-top: 0; text-align: center; }
+        .leaderboard-list { list-style: none; padding: 0; margin: 0; }
+        .leaderboard-list li { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.95em; }
+        .leaderboard-list li span.score { font-weight: bold; color: #4CAF50; }
+        .quiz-area { flex-grow: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow-y: auto; }
+        .card { background-color: #c4d0c1; border-radius: 8px; padding: 30px; width: 100%; max-width: 800px; border-left: 6px solid #1a3c5a; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2em; color: #0b2e4f; margin-bottom: 20px; border-bottom: 2px solid #0b2e4f; padding-bottom: 10px;}
+        .question { font-size: 1.1em; font-weight: bold; margin-bottom: 30px; line-height: 1.6; color: #0b2e4f; white-space: pre-wrap; }
+        .options-container { display: flex; flex-direction: column; gap: 15px; }
+        .option-btn { background-color: #f0f2ed; border: 1px solid #bdc3b9; padding: 15px 20px; border-radius: 6px; text-align: left; font-size: 1em; font-weight: 500; cursor: pointer; transition: all 0.2s ease; color: #333; }
+        .option-btn:hover { background-color: #e2e6de; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .option-btn.correct { background-color: #4CAF50 !important; color: white !important; border-color: #4CAF50 !important; }
+        .option-btn.wrong { background-color: #f44336 !important; color: white !important; border-color: #f44336 !important; }
+        .option-btn:disabled { cursor: not-allowed; transform: none; box-shadow: none; }
+        @media (max-width: 768px) { #mainApp { flex-direction: column; } .sidebar { width: 100%; height: 200px; } .quiz-area { height: calc(100vh - 200px); padding: 10px; align-items: flex-start;} }
+    </style>
+</head>
+<body>
+
+<div id="loginScreen">
+    <div class="login-box">
+        <h2>Verse Identification)</h2>
+        <div style="background-color: rgba(255, 255, 255, 0.6); padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: left; border-left: 4px solid #1a3c5a; font-size: 0.95em; color: #333;">
+            <strong style="color: #0b2e4f;">📌 Tagubilin:</strong><br>
+            Ito ay tulong lamang sa pagmememorya sa VID (Verse Identification), gamitin pa rin natin ang mga kagamitan na mula sa Paaralan.
+        </div>
+        <p style="font-size: 0.9em; font-weight: bold; color: #0b2e4f;">I-enter ang iyong Pangalan upang magsimula nang magmemorya.</p>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="lastName" placeholder="Last Name" required style="margin: 0;">
+            <input type="text" id="firstName" placeholder="First Name" required style="margin: 0;">
+        </div>
+        <button id="startBtn">Magsimula</button>
+        <div style="margin-top: 20px; font-size: 0.8em; color: #555; border-top: 1px solid #aaa; padding-top: 10px;">
+            <em>Programmed by Ka SC</em>
+        </div>
+    </div>
+</div>
+
+<div id="mainApp">
+    <div class="sidebar">
+        <h3>🏆 Live Top 10</h3>
+        <ul class="leaderboard-list" id="leaderboard">
+            <li>Nagloload...</li>
+        </ul>
+    </div>
+    <div class="quiz-area">
+        <div class="card">
+            <div class="header">
+                <span id="progressText">Tanong 1 / ...</span>
+                <span>Score: <span id="scoreText" style="color: #d93025; font-size: 1.3em;">0</span></span>
+            </div>
+            <div class="question" id="questionText">Nilo-load ang tanong...</div>
+            <div class="options-container" id="optionsContainer"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, get, child } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+    // ANG IYONG PERSONAL NA FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQRKhN73Nj_RzAqOxrghA8GAKPOMjYwLw",
+      authDomain: "vid112.firebaseapp.com",
+      databaseURL: "https://vid112-default-rtdb.firebaseio.com", 
+      projectId: "vid112",
+      storageBucket: "vid112.firebasestorage.app",
+      messagingSenderId: "207436545965",
+      appId: "1:207436545965:web:80a3c3a2c056aaad00ab24",
+      measurementId: "G-7HZ0DP9EMG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let myScore = 0;
+    let currentQuestionIndex = 0;
+    let playerName = "";
+    let shuffledData = []; 
+
+    let deviceId = localStorage.getItem('vid_device_id');
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('vid_device_id', deviceId);
+    }
+
+    // ====================================================================
+    // I-PASTE DITO ANG IYONG BUONG 1-500 NA masterData ARRAY!
+    const masterData = [
+        { vid: "1", ref: "Hebreo 1:1-2", text: `Ang Dios, na nagsalita nang unang panahon sa ating mga magulang sa iba't ibang panahon at sa iba't ibang paraan sa pamamagitan ng mga propeta, Ay nagsalita sa atin sa mga huling araw na ito sa pamamagitan, ng kaniyang Anak, na siyang itinalaga na tagapagmana ng lahat ng mga bagay, na sa pamamagitan naman niya'y ginawa ang sanglibutan;` },
+        { vid: "2", ref: "Jeremias 30:2", text: `Ganito ang sinasalita ng Panginoon, ng Dios ng Israel, na nagsasabi, lyong isulat sa isang aklat ang lahat ng mga salita na aking sinalita sa iyo.` },
+        { vid: "3", ref: "II Timoteo 3:15-17", text: `At mula sa pagkasanggol ay iyong nalalaman ang mga banal na kasulatan na makapagpadunong sa iyo sa ikaliligtas sa pamamagitan ng pananampalataya kay Cristo Jesus. Ang lahat ng mga kasulatan na kinasihan ng Dios ay mapapakinabangan din naman sa pagtuturo, sa pagsansala, sa pagsaway, sa ikatututo na nasa katuwiran: Upang ang tao ng Dios ay maging sakdal, tinuruang lubos sa lahat ng mga gawang mabuti.` },
+        { vid: "4", ref: "Apocalipsis 10:4", text: `At pagkaugong ng pitong kulog, ay isusulat ko sana: at narinig ko ang isang tinig na mula sa langit, na nagsasabi, Tatakan mo ang mga bagay na sinalita ng pitong kulog, at huwag mong isulat.` },
+        { vid: "5", ref: "Juan 17:17", text: `Pakabanalin mo sila sa katotohanan: ang salita mo'y katotohanan.` },
+        { vid: "6", ref: "Isaias 46:11-13", text: `Na tumatawag ng ibong mangdadagit mula sa silanganan, ng taong gumagawa ng aking payo mula sa malayong lupain; oo, aking sinalita, akin namang papangyayarihin; aking pinanukala, akin namang gagawin. Inyong dinggin ako, ninyong may mapagmatigas na loob; na malayo sa katuwiran: Aking inilalapit ang aking katuwiran, hindi maglalaon at ang aking pagliligtas ay hindi magluluwat: at aking ilalagay ang kaligtasan sa Sion na ukol sa Israel na aking kaluwalhatian.` },
+        { vid: "7", ref: "Mateo 24:6-8", text: `At mangakakarinig kayo ng mga digmaan at mga alingawngaw ng mga digmaan; ingatan ninyo na huwag kayong magulumihanan: sapagka't kinakailangang ito'y mangyari datapuwa't hindi pa ang wakas. Sapagka't magsisitindig ang bansa laban sa bansa, at ang kaharian laban sa kaharian; at magkakagutom at lilindol sa iba't ibang dako. Datapuwa't ang lahat ng mga bagay na ito ay siyang pasimula ng kahirapan.` },
+        { vid: "8", ref: "Daniel 12:4", text: `Nguni't ikaw, Oh Daniel, isara mo ang mga salita, at tatakan mo ang aklat, hanggang sa panahon ng kawakasan: marami ang tatakbo ng paroo't parito, at ang kaalaman ay lalago.` },
+        { vid: "9", ref: "II Timoteo 3:1-5", text: `Datapuwa't alamin mo ito, na sa mga huling araw ay darating ang mga panahong mapanganib. Sapagka't ang mga tao'y magiging maibigin sa kanilang sarili, maibigin sa salapi, mayayabang, mga mapagmalaki, mapagtungayaw, masuwayin sa mga magulang, mga walang turing, mga walang kabanalan, Walang katutubong pagibig, mga walang paglulubag, mga palabintangin, mga walang pagpipigil sa sarili, mga mabangis, hindi mga maibigin sa mabuti, Mga lilo, mga matitigas ang ulo, mga palalo, mga maibigin sa kalayawan kay sa mga maibigin sa Dios; Na may anyo ng kabanalan, datapuwa't tinanggihan ang kapangyarihan nito: lumayo ka rin naman sa mga ito.` },
+        { vid: "10", ref: "Juan 20:30-31", text: `Gumawa rin nga si Jesus ng iba't ibang maraming tanda sa harap ng kaniyang mga alagad, na hindi nangasusulat sa aklat na ito: Nguni't ang mga ito ay nangasulat, upang kayo'y magsisampalataya na si Jesus ay ang Cristo, ang Anak ng Dios; at sa inyong pagsampalataya ay magkaroon kayo ng buhay sa kaniyang pangalan.` },
+        { vid: "11", ref: "I Corinto 4:6", text: `Ang mga bagay ngang ito, mga kapatid, ay inianyo ko sa halimbawa sa aking sarili at kay Apolos dahil sa inyo; upang sa amin ay mangatuto kayo na huwag magsihigit sa mga bagay na nangasusulat upang ang sinoman sa inyo ay huwag magpalalo ang isa laban sa iba.` },
+        { vid: "12", ref: "Apocalipsis 22:18-19", text: `Aking sinasaksihan sa bawa't taong nakikinig sa mga salita ng hula ng aklat na ito, Kung ang sinoman ay magdagdag sa mga ito, ay daragdagan siya ng Dios ng mga salot na nakasulat sa aklat na ito: At kung ang sinoman ay magalis sa mga salita ng aklat ng hulang ito, ay aalisin ng Dios ang kaniyang bahagi sa punong kahoy ng buhay, at sa bayang banal, na nangakasulat sa aklat na ito.` },
+        { vid: "13", ref: "Juan 17:1 at 3", text: `Ang mga bagay na ito ay sinalita ni Jesus; at sa pagtingala ng kaniyang mga mata sa langit, ay sinabi niya, Ama, dumating na ang oras; luwalhatiin mo ang iyong Anak, upang ikaw ay luwalhatiin ng Anak: At ito ang buhay na walang hanggan, na ikaw ay makilala nila na iisang Dios na tunay, at siyang iyong sinugo, sa makatuwid baga'y si Jesucristo.` },
+        { vid: "14", ref: "*I Corinto 4:6", text: `Ang mga bagay ngang ito, mga kapatid, ay inianyo ko sa halimbawa sa aking sarili at kay Apolos dahil sa inyo; upang sa amin ay mangatuto kayo na huwag magsihigit sa mga bagay na nangasususlat; upang ang sinoman sa inyo ay huwag magpalalo ang isa laban sa iba.` },
+        { vid: "15", ref: "Isaias 45:21", text: `Kayo'y mangagpahayag, at mangagpasapit; oo, magsanggunian silang magkakasama: sinong nagpakilala nito mula nang mga unang panahon? sinong nagpahayag niyaon nang una? hindi baga ang Panginoon? at walang Dios liban sa akin: isang ganap na Dios at Tagapagligtas; walang iba liban sa akin.` },
+        { vid: "16", ref: "Juan 4:23-24", text: `Datapuwa't dumarating ang oras, at ngayon nga, na sasambahin ng mga tunay na mananamba ang Ama sa espiritu at katotohanan: sapagka't hinahanap ng Ama ang mga gayon na maging mananamba sa kaniya. Ang Dios ay Espiritu: at ang mga sa kaniya'y nagsisisamba ay kinakailangang magsisamba sa espiritu at sa katotohanan.` },
+        { vid: "17", ref: "* Jeremias 1:9", text: `Nang magkagayo'y iniunat ng Panginoon ang kaniyang kamay, at hinipo ang aking bibig; at sinabi sa akin ng Panginoon, Narito, inilagay ko ang aking mga salita sa iyong bibig:` },
+        { vid: "18", ref: "Gawa 17:28-29", text: `Sapagkat sa kaniya tayo'y nangabubuhay, at nagsisikilos, at mayroon tayong pagkatao: na gaya naman ng sinabi ng ilan sa inyong sariling mga manunula, Sapagkat tayo nama'y sa kaniyang lahi. Yamang tayo nga'y lahi ng Dios, ay hindi marapat nating isipin na ang pagka Dios ay katulad ng ginto, o ng pilak, o ng bato, na inukit ng kabihasnan at katalinuhan ng tao.` },
+        { vid: "19", ref: "Mateo 6:9-10", text: `Magsidalangin nga kayo ng ganito: Ama namin na nasa langit ka, Sambahin nawa ang pangalan mo. Dumating nawa ang kaharian mo. Gawin nawa ang iyong kalooban, kung paano sa langit, gayon din naman sa lupa.` },
+        { vid: "20", ref: "Roma 1:19-20", text: `Sapagka't ang nakikilala tungkol sa Dios ay hayag sa kanila; sapagka't ito'y ipinahayag ng Dios sa kanila. Sapagka't ang mga bagay niyang hindi nakikita buhat pa nang lalangin ang sanglibutan ay nakikitang maliwanag, sa pagkatanto sa pamamagitan ng mga bagay na ginawa niya, maging ang walang hanggan niyang kapangyarihan at pagka Dios; upang sila'y walang madahilan:` },
+        { vid: "21", ref: "Genesis 17:1", text: `At nang si Abram ay may siyam na pu't siyam na taon, ay napakita ang Panginoon kay Abram, at sa kaniya'y nagsabi, Ako ang Dios na Makapangyarihan sa lahat lumakad ka sa harapan ko, at magpakasakdal ka.` },
+        { vid: "22", ref: "Awit 19:1-4", text: `Ang kalangitan ay nagpapahayag ng kaluwalhatian ng Dios; At ipinakikilala ng kalawakan ang gawa ng kaniyang kamay. Sa araw-araw ay nagbabadya ng pananalita, At sa gabi-gabi ay nagpapakilala ng kaalaman. Walang pananalita o wika man; Ang kanilang tinig ay hindi marinig. Ang kanilang pangungusap ay lumaganap sa buong lupa, At ang kanilang mga salita ay hanggang sa wakas ng sanglibutan. Sa kanila inilagay niya ang tabernakulo na ukol sa araw,` },
+        { vid: "23", ref: "Job 12:7-10", text: `Nguni't tanungin mo ngayon ang mga hayop, at tuturuan ka nila: At ang mga ibon sa himpapawid, at kanilang sasaysayin sa iyo: O magsalita ka sa lupa, at magtuturo sa iyo; At ang mga isda sa dagat ay magsasaysay sa iyo. Sinong hindi nakakaalam sa lahat ng mga ito, Na ang kamay ng Panginoon ang siyang gumawa nito? Nasa kamay niya ang kaluluwa ng bawa't bagay na may buhay, At ang hininga ng lahat ng mga tao.` },
+        { vid: "24", ref: "Hebreo 3:4", text: `Sapagka't ang bawa't bahay ay may nagtayo; datapuwa't ang nagtayo ng lahat ng mga bagay ay ang Dios.` },
+        { vid: "25", ref: "Isaias 45:18", text: `Sapagka't ganito ang sabi ng Panginoon na lumikha ng langit, na siyang Dios na nag-anyo sa lupa at gumawa niyaon, na kaniyang itinatag, at hindi niya nilikha na sira, na kaniyang inanyuan upang tahanan: ako ang Panginoon; at wala nang iba.` },
+        { vid: "26", ref: "Awit 100:2-3", text: `Mangaglingkod kayo na may kasayahan sa Panginoon; Magsilapit kayo sa kaniyang harapan na may awitan. Alamin ninyo na ang Panginoon ay siyang Dios; Siya ang lumalang sa atin, at tayo'y kaniya: Tayo'y kaniyang bayan, at mga tupa ng kaniyang pastulan.` },
+        { vid: "27", ref: "I Juan 2:3", text: `At sa ganito'y nalalaman natin na siya'y ating nakikilala, kung tinutupad natin ang kaniyang mga utos.` },
+        { vid: "28", ref: "II Tesalonica 1:8-9", text: `Na maghihiganti sa hindi nagsisikilala sa Dios, at sa kanila ng hindi nagsisitalima sa evangelio ng ating Panginoong Jesus: Na siyang tatangap ng kaparusahan, na walang hanggang kapahamakang mula sa harapan ng Panginoon at mula sa kaluwalhatian ng kaniyang kapangyarihan.` },
+        { vid: "29", ref: "Awit 95:6-7", text: `Oh magsiparito kayo tayo'y magsisamba at magsiyukod; Tayo'y magsiluhod sa harap ng Panginoon na May-lalang sa atin. Sapagka't siya'y ating Dios, At tayo'y bayan ng kaniyang pastulan, at mga tupa ng kaniyang kamay. Ngayon, kung inyong didinggin ang kaniyang tinig!` },
+        { vid: "30", ref: "Awit 5:7", text: `Nguni't sa ganang akin, sa kasaganaan ng iyong kagandahang-loob ay papasok ako sa iyong bahay; Sa takot sa iyo ay sasamba ako sa dako ng iyong banal na templo.` },
+        { vid: "31", ref: "I Corinto 14:15 at 26", text: `Ano nga ito? Mananalangin ako sa espiritu, at mananalangin din naman ako sa pagiisip: aawit ako sa espiritu, at aawit din naman ako sa pagiisip. Ano nga ito, mga kapatid? Pagka kayo'y nangagkakatipon ang bawa't isa sa inyo'y may isang awit, may isang aral, may isang pahayag, may wika, may isang pagpapaliwanag. Gawin ninyo ang lahat ng mga bagay sa ikatitibay.` },
+        { vid: "32", ref: "I Corinto 14:40 MB", text: `Lamang, gawin ninyo ang lahat ng bagay sa wasto at maayos na paraan.` },
+        { vid: "33", ref: "Hebreo 10:25-27", text: `Na huwag nating pabayaan ang ating pagkakatipon, na gaya ng ugali ng iba, kundi mangagaralan sa isa't isa; at lalo na kung inyong namamalas na nalalapit na ang araw. Sapagka't kung ating sinasadya ang pagkakasala pagkatapos na ating matanggap ang pagkakilala sa katotohanan, ay wala nang haing natitira pa tungkol sa mga kasalanan, Kundi isang kakilakilabot na paghihintay sa paghuhukom, at isang kabangisan ng apoy na lalamon sa mga kaaway.` },
+        { vid: "34", ref: "Gawa 20:7", text: `At nang unang araw ng sanglinggo, nang kami'y nangagkakapisan upang pagputolputulin ang tinapay, si Pablo ay nangaral sa kanila, na nagaakalang umalis sa kinabukasan; at tumagal ang kaniyang pananalita hanggang sa hatinggabi.` },
+        { vid: "35", ref: "Gawa 2:46", text: `At araw-araw sila'y nagsisipanatiling matibay sa pagkakaisa sa templo, at sa pagpuputolputol ng tinapay sa bahay-bahay, at nagsisikain sila ng kanilang pagkain na may galak at may katapatan ng puso.` },
+        { vid: "36", ref: "Mateo 18:19-20", text: `Muling sinasabi ko sa inyo, na kung pagkasunduan ng dalawa sa inyo sa lupa ang nauukol sa anomang bagay na kanilang hihingin, ay gagawin sa kanila ng aking Ama na nasa langit. Sapagkat kung saan nagkakatipon ang dalawa o tatlo sa aking pangalan, ay naroroon ako sa gitna nila.` },
+        { vid: "37", ref: "Deuteronomio 12:5", text: `Kundi sa dakong pipiliin ng Panginoon ninyong Dios sa lahat ng inyong mga lipi na paglalagyan ng kaniyang pangalan, sa makatuwid bagay sa kaniyang tahanan ay inyong hahanapin, at doon kayo paroroon:` },
+        { vid: "38", ref: "Lucas 9:59-62", text: `At sinabi niya sa iba, Sumunod ka sa akin. Datapuwa't siya'y nagsabi, Panginoon, tulutan mo muna akong makauwi at mailibing ko ang aking ama. Datapuwa't sinabi niya sa kaniya, Pabayaan mong ilibing ng mga patay ang kanilang sariling mga patay; datapuwa't yumaon ka at ibalita mo ang kaharian ng Dios. At ang iba nama'y nagsabi, Susunod ako sa iyo, Panginoon; datapuwa't pabayaan mo akong magpaalam muna sa mga kasangbahay ko. Datapuwa't sinabi sa kaniya ni Jesus, Walang taong pagkahawak sa araro, at lumilingon sa likod, ay karapatdapat sa kaharian ng Dios.` },
+        { vid: "39", ref: "Awit 89:7 MB", text: `Sa pagtitipon man ng lahat ng banal, Taglay nila'y takot at buong paggalang.` },
+        { vid: "40", ref: "Awit 93:5", text: `Ang iyong mga patotoo ay totoong tunay: Ang kabanalan ay nararapat sa iyong bahay, Oh Panginoon, magpakailan man.` },
+        { vid: "41", ref: "Habakuk 2:20 MB", text: `Ngunit si Yahweh ay nasa kanyang banal na templo, tumahimik ang lahat sa harapan niya.` },
+        { vid: "42", ref: "Awit 96:1-3 at 8-9", text: `"O magsiawit sa Panginoon ng bagong awit; awitan ang Panginoon sa buong daigdig! Awitan ang Panginoon, purihin ang pangalan niya; ipahayag ang kaniyang pagliligtas sa araw-araw. Ipahayag ang kaniyang kaluwalhatian sa lahat ng mga bansa, ang kaniyang mga kagila-gilalas na gawa sa lahat ng tao! Ibigay sa Panginoon ang kaluwalhatiang karapat-dapat sa kaniyang pangalan; mangagdala ng handog, at pumasok sa kaniyang mga patyo! Sambahin ang Panginoon sa banal na kasuotan; manginig sa harap niya, ang buong daigdig!"` },
+        { vid: "43", ref: "* Juan 15:1 at 5", text: `Ako ang tunay na puno ng ubas, at ang aking Ama ang magsasaka. Ako ang puno ng ubas, kayo ang mga sanga: Ang nanatili sa akin, at ako'y sa kaniya, ay siyang nagbubunga ng marami: sapagkat kung kayo'y hiwalay sa akin ay wala kayong magagawa.` },
+        { vid: "44", ref: "Galacia 4:6", text: `At sapagka't kayo'y mga anak, ay sinugo ng Dios ang Espiritu ng kaniyang Anak sa ating mga puso, na sumisigaw, Abba, Ama.` },
+        { vid: "45", ref: "Efeso 3:16-18 MB", text: `Hinihiling ko, ayon sa kanyang kayamanan at kadakilaan, na palakasin niya ang inyong buhay espirituwal sa pamamagitan ng kanyang Espiritu. Nawa'y manahan si Cristo sa inyong puso sa pamamagitan ng inyong pananalig sa kanya upang sa inyong pag-uugat at pagiging matatag sa pag-ibig, maunawaan ninyo, kasama ng mga hinirang, kung gaano kadakila ang pag-ibig ni Cristo.` },
+        { vid: "46", ref: "Mateo 7:21-23", text: `Hindi ang bawa't nagsasabi sa akin, Panginoon, Panginoon, ay papasok sa kaharian ng langit; kundi ang gumaganap ng kalooban ng aking Ama na nasa langit. Marami ang mangagsasabi sa akin sa araw na yaon, Panginoon, Panginoon, hindi baga nagsipanghula kami sa iyong pangalan, at sa pangalan mo'y nangagpalayas kami ng mga demonio, at sa pangalan mo'y nagsigawa kami ng maraming gawang makapangyarihan? At kung magkagayo'y ipahahayag ko sa kanila, Kailan ma'y hindi ko kayo nangakilala: magsilayo kayo sa akin, kayong manggagawa ng katampalasanan.` },
+        { vid: "47", ref: "Mateo 15:9", text: `Datapuwa't walang kabuluhan ang pagsamba nila sa akin, Na nagtuturo ng kanilang pinakaaral ang mga utos ng mga tao.` },
+        { vid: "48", ref: "Colosas 2:22-23", text: `(Ang lahat ng mga bagay na ito ay mangasisira sa paggamit), ayon sa mga utos at mga aral ng mga tao? Ang mga bagay na iya'y katotohanang mayroong anyo ng karunungan sa pagsambang kusa, at sa pagpapakababa, at sa pagpapakahirap sa katawan; nguni't walang anomang kabuluhan laban sa ikalalayaw ng laman.` },
+        { vid: "49", ref: "Levitico 10:1-2", text: `At si Nadab at si Abiu, na mga anak ni Aaron, ay kumuha ang bawa't isa sa kanila ng kanikaniyang suuban, at sinidlan nila ng apoy, at pinatungan ng kamangyan, at sila'y naghandog sa harap ng Panginoon ng ibang apoy na hindi iniutos niya sa kanila. At sa harap ng Panginoon ay may lumabas na apoy, at sinupok sila; at namatay sila sa harap ng Panginoon.` },
+        { vid: "50", ref: "II Samuel 6:6-7", text: `At nang sila'y magsidating sa giikan ni Nachon, iniunat ni Uzza ang kaniyang kamay sa kaban ng Dios, at hinawakan; sapagka't ang mga baka ay nangatisod. At ang galit ng Panginoon ay nagalab laban kay Uzza; at sinaktan siya ng Dios doon dahil sa kaniyang kamalian; at doo'y namatay siya sa siping ng kaban ng Dios.` },
+		{ vid: "51", ref: "Bilang 4:15", text: `At pagka si Aaron at ang kaniyang mga anak ay nakatapos na makapagtakip sa santuario at sa buong kasangkapan ng santuario, kalian ma't isususlong ang kampamento: ay magsisilapit pagkatapos ang mga anak ni Coath upang kanilang buhatin yaon: datapuwat huwag silang hihipo sa santuario, baka sila'y mamatay.` },
+        { vid: "52", ref: "I Juan 5:3", text: `Sapagka't ito ang pagibig sa Dios, na ating tuparin ang kaniyang mga utos: at ang kaniyang mga utos ay hindi mabibigat.` },
+        { vid: "53", ref: "Santiago 2:10 at 14", text: `Sapagkat ang sinomang gumaganap ng buong kautusan, at gayon ma'y natitisod sa isa, ay nagiging makasalanan sa lahat. Anong pakikinabangin, mga kapatid ko kung sinasabi ng sinoman na siya'y may pananampalataya, nguni't walang gawa?` },
+        { vid: "54", ref: "Santiago 2:17-19", text: `Gayon din naman ang pananampalataya na walang mga gawa, ay patay sa kaniyang sarili. Oo, sasabihin ng isang tao, Ikaw ay mayroong pananampalataya, at ako'y mayroong mga gawa: ipakita mo sa akin ang iyong pananampalatayang hiwalay sa mga gawa...` },
+        { vid: "55", ref: "Santiago 2:22-24", text: `Nakikita mo na ang pananampalataya ay gumagawang kalakip ng kaniyang mga gawa, at sa pamamagitan ng mga gawa ay naging sakdal ang pananampalataya; At natupad ang kasulatan na nagsasabi, at si Abraham ay sumampalataya sa Diyos...` },
+        { vid: "56", ref: "* Job 26:7", text: `Kaniyang iniunat ang hilagaan sa pagitang walang laman, At ibinibitin ang lupa sa wala.` },
+        { vid: "57", ref: "Efeso 1:9-10", text: `Na ipinakikilala niya sa atin ang hiwaga ng kaniyang kalooban, ayon sa kaniyang minagaling na ipinasiya niya sa kaniya rin. Sa pagiging katiwala sa kaganapan ng mga panahon, upang tipunin ang lahat ng mga bagay kay Cristo...` },
+        { vid: "58", ref: "Roma 12:4-5", text: `Sapagka't kung paanong sa isang katawan ay mayroong tayong maraming mga sangkap, at ang lahat ng mga sangkap ay hindi pareho ang gawain: Ay gayon din tayo, na marami, ay iisang katawan kay Cristo...` },
+        { vid: "59", ref: "Colosas 1:18", text: `At siya ang ulo ng katawan, sa makatuwid baga'y ng iglesia;` },
+        { vid: "60", ref: "Roma 16:16", text: `Mangagbatian kayo ng banal na halik. Binabati kayo ng lahat ng mga iglesia ni Cristo.` },
+        { vid: "61", ref: "Gawa 20:28", text: `Ingatan ninyo ang inyong sarili, at ang buong kawan, na sa kanila'y ginawa kayo ng Espiritu Santo na mga Obispo, upang pakanin ninyo ang iglesia ng Panginoon na binili niya ng kaniyang sariling dugo.` },
+        { vid: "62", ref: "Gawa 20:28 Lamsa", text: `"Ingatan ninyo kung gayon ang inyong mga sarili at ang buong kawan na rito'y hinirang kayo ng Espiritu Santo na mga katiwala, upang pakanin ang iglesia Ni Cristo na binili niya ng kaniyang dugo."` },
+        { vid: "63", ref: "Hebreo 9:13-14", text: `Sapagkat kung ang mga dugo ng kambing at ng mga baka, at ang abo ng dumalagang baka na ibinudbod sa mga nadungisan, ay makapagiging banal sa ikalilinis ng laman. Gaano pa kaya ang dugo ni Cristo...` },
+        { vid: "64", ref: "Juan 10:7 at 9", text: `Muli ngang sinabi sa kanila ni Jesus, Katotohanan, katotohanang sinasabi ko sa inyo, Ako ang pintuan ng mga tupa. Ako ang pintuan; ang sinomang taong pumasok sa akin, ay siya'y maliligtas...` },
+        { vid: "64.1", ref: "Roma 5:12", text: `Kaya, kung paano na sa pamamagitan ng isang tao ay pumasok ang kasalanan sa sanglibutan, at ang kamataya'y sa pamamagitan ng kasalanan; at sa ganito'y ang kamatayan ay naranasan ng lahat ng mga tao...` },
+        { vid: "65", ref: "Isaias 59:2", text: `Kundi pinapaghiwalay ng inyong mga kasamaan kayo at ang inyong Dios, at ang inyong mga kasalanan ay siyang nagpakubli ng kaniyang mukha sa inyo, upang siya'y huwag makinig.` },
+        { vid: "66", ref: "Roma 6:23", text: `Sapagka't ang kabayaran ng kasalanan ay kamatayan; datapuwa't ang kaloob na walang bayad ng Dios ay buhay na walang hanggan kay Cristo Jesus na Panginoon natin.` },
+        { vid: "67", ref: "Apocalipsis 20:14", text: `At ang kamatayan at ang Hades ay ibinulid sa dagatdagatang apoy. Ito ang ikalawang kamatayan, sa makatuwid ay ang dagatdagatang apoy.` },
+        { vid: "68", ref: "II Corinto 5:21", text: `Yaong hindi nakakilala ng kasalanan ay kaniyang inaring may sala dahil sa atin: upang tayo'y maging sa kaniya'y katuwiran ng Dios.` },
+        { vid: "69", ref: "Deuteronomio 24:16", text: `Hindi papatayin ang mga magulang dahil sa mga anak, ni ang mga anak ay papatayin dahil sa mga magulang; bawa't tao'y papatayin dahil sa kaniyang sariling kasalanan.` },
+        { vid: "70", ref: "I Pedro 2:21-22", text: `Sapagka't sa ganitong bagay kayo'y tinawag: sapagka't si Cristo man ay nagbata dahil sa inyo, na kayo'y iniwanan ng halimbawa, upang kayo'y mangagsisunod sa mga hakbang niya: Na siya'y hindi nagkasala...` },
+        { vid: "71", ref: "Efeso 5:23", text: `Sapagka't ang lalake ay pangulo ng kaniyang asawa, gaya naman ni Cristo na pangulo ng iglesia, na siya rin ang tagapagligtas ng katawan.` },
+        { vid: "72", ref: "Efeso 2:15", text: `Na inalis ang pagkakaalit sa pamamagitan ng kaniyang laman, kahit kautusan na may mga batas at ang palatuntunan; upang sa dalawa ay lalangin sa kaniyang sarili ang isang taong bago...` },
+        { vid: "73", ref: "I Corinto 5:12-13", text: `Sapagkat ano sa akin ang humatol sa nangasa labas? Hindi baga kayo nagsisihatol sa nangasa loob? Datapuwa't sa nangasa labas ay Dios ang humahatol. Alisin nga ninyo sa inyo ang masamang tao.` },
+        { vid: "74", ref: "Juan 8:24", text: `Sinabi ko nga sa inyo, na kayo'y mangamamatay sa inyong mga kasalanan: sapagka't malibang kayo'y magsisampalataya na ako nga ang Cristo, ay mangamamatay kayo sa inyong mga kasalanan.` },
+        { vid: "75", ref: "Juan 15:6", text: `Kung sinoman ay hindi manatili sa akin, ay siya'y matatapong katulad ng sanga, at matutuyo; at mga titipunin at mga ihahagis sa apoy, at mangasusunog.` },
+        { vid: "76", ref: "Lucas 12:32", text: `Huwag kayong mangatakot, munting kawan; sapagka't nakalulugod na mainam sa inyong Ama ang sa inyo'y ibigay ang kaharian.` },
+        { vid: "77", ref: "Gawa 8:1", text: `At si Saulo ay sumangayon sa kaniyang pagkamatay. At nang araw na yao'y nangyari ang isang malaking paguusig laban sa iglesia na nasa Jerusalem; at silang lahat ay nagsipangalat sa lahat ng mga dako...` },
+        { vid: "78", ref: "Gawa 8:4-5", text: `Ang mga nagsipangalat nga ay nagsipaglakbay, na ipinangangaral ang salita. At bumaba si Felipe sa bayan ng Samaria, at ipinangaral sa kanila ang Cristo.` },
+        { vid: "79", ref: "Gawa 6:7", text: `At lumago ang salita ng Dios; at dumaming lubha sa Jerusalem ang bilang ng mga alagad; at nagsitalima sa pananampalataya ang lubhang maraming saserdote.` },
+        { vid: "80", ref: "Roma 16:4", text: `Na ipinain ang kanilang mga leeg dahil sa aking buhay na sa kanila'y hindi lamang ako ang nagpapasalamat, kundi naman ang lahat ng mga iglesia ng mga Gentil:` },
+        { vid: "81", ref: "Mateo 24:4", text: `At sumagot si Jesus at sinabi sa kanila, Mangagingat kayo na huwag kayong mailigaw ninoman.` },
+        { vid: "82", ref: "Mateo 24:9 at 11", text: `Kung magkagayo'y ibibigay kayo sa kapighatian, at kayo'y papatayin: at kayo'y kapopootan ng lahat ng mga bansa dahil sa aking pangalan. At magsisibangon ang maraming bulaang propeta, at kanilang ililigaw ang marami.` },
+        { vid: "83", ref: "I Timoteo 4:1 at 3", text: `Nguni't hayag na sinasabi ng Espiritu, na sa mga huling panahon ang iba'y magsisitalikod sa pananampalataya, at mangakikinig sa mga espiritung mapanghikayat at sa mga aral ng mga demonio...` },
+        { vid: "84", ref: "Mateo 7:15", text: `Mangagingat kayo sa mga bulaang propeta, na nagsisilapit sa inyo na may damit tupa, datapuwa't sa loob ay mga lobong maninila.` },
+        { vid: "85", ref: "Juan 1:29", text: `Nang kinabukasan ay nakita ni Juan si Jesus na lumalapit sa kaniya, at sinabi, Narito, ang Cordero ng Dios, na nagaalis ng kasalanan ng sanglibutan!` },
+        { vid: "86", ref: "II Tesalonica 2:3-4", text: `Huwag kayong padaya kanino man sa anomang paraan: sapagka't ito'y hindi darating, maliban nang dumating mula ang pagtaliwakas, at mahayag ang taong makasalanan...` },
+        { vid: "87", ref: "*I Corinto 1:19", text: `Sapagkat nasusulat, Iwawalat ko ang karunungan ng marurunong, At isasawala ko ang kabaitan mababait.` },
+        { vid: "88", ref: "Ezekiel 18:4", text: `Narito, lahat ng kaluluwa ay akin; kung paano ang kaluluwa ng ama, gayon din ang kaluluwa ng anak ay akin: ang kaluluwa na nagkakasala ay mamamatay.` },
+        { vid: "89", ref: "Apocalipsis 13:16", text: `At ang lahat, maliliit at malalaki, at mayayaman at mga dukha, at ang mga laya at ang mga alipin ay pinabigyan ng isang tanda sa kanilang kanang kamay, o sa noo;` },
+        { vid: "90", ref: "* II Cronica 15:3", text: `Ngayon nga ang Israel ay malaon nang walang Diyos na tunay at walang tagapagturong saserdote, at walang kautusan.` },
+        { vid: "91", ref: "Gawa 20:25 at 29", text: `At ngayon, narito, nalalaman ko na kayong lahat, na aking nilibot na pinangaralan ng kaharian, ay hindi na ninyo muling makikita pa ang aking mukha. Aking talastas na pagalis ko ay magsisipasok sa inyo ang mga ganid na lobo...` },
+        { vid: "92", ref: "* Apocalipsis 17:1 at 5 at 15", text: `At dumating ang isa sa pitong anghel na may pitong mangkok, at nagsalita sa akin, na nagsasabi, Pumarito ka ipakikita ko sa iyo ang hatol sa bantog na patutot na nakaupo sa maraming tubig.` },
+        { vid: "93", ref: "Gawa 20:37-38", text: `At silang lahat ay nagsipanangis nang di kawasa at nangagsiyakap sa leeg ni Pablo at siya'y hinagkan nila. Na ikinahahapis ng lalo sa lahat ang salitang sinabi niya...` },
+        { vid: "94", ref: "II Timoteo 4:6-8", text: `Sapagka't ako'y iniaalay na, at ang panahon ng aking pagpanaw ay dumating na. Nakipagbaka ako ng mabuting pakikipagbaka, natapos ko na ang aking takbo, iningatan ko ang pananampalataya...` },
+        { vid: "95", ref: "Apocalipsis 18:2 at 4", text: `At siya'y sumigaw ng malakas na tinig na angsasabi, Naguho, naguho ang dakilang Babilonia, at naging tahanan ng mga demonio...` },
+        { vid: "96", ref: "Exodo 20:3-5", text: `Huwag kang magkakaroon ng ibang mga dios sa harap ko. Huwag kang gagawa para sa iyo ng larawang inanyuan o ng kawangis man ng anomang anyong nasa itaas sa langit...` },
+        { vid: "97", ref: "Roma 1:23 at 25", text: `At pinalitan nila ang kaluwalhatian ng Dios na hindi nasisira, ng isang katulad ng larawan ng tao na nasisira, at ng mga ibon, at ng mga hayop na may apat na paa, at ng mga nagsisigapang.` },
+        { vid: "98", ref: "Roma 1:28-31", text: `At palibhasa'y hindi nila minagaling na kilalanin ang Dios, ibinigay sila ng Dios sa isang mahalay na pagiisip, upang gawin yaong mga bagay na hindi nangararapat; Nangapuspus sila ng buong kalikuan...` },
+        { vid: "99", ref: "Hebreo 7:27", text: `Na hindi nangangailangan araw-araw na maghandog ng hain, na gaya niyaong mga dakilang saserdote una-una'y patungkol sa kaniyang sariling mga kasalanan at saka patungkol sa mga kasalanan ng bayan...` },
+        { vid: "100", ref: "Hebreo 10:10-11", text: `Sa kaloobang yaon tayo'y pinapaging-banal, sa pamamagitan ng pagkahandog ng katawan ni Cristo na minsan magpakailan man.` },
+		{ vid: "101", ref: "Mateo 26:26-28", text: `At samantalang sila'y nagsisikain, ay dumampot si Jesus ng tinapay, at pinagpala, at pinagputolputol; at ibinigay sa mga alagad, at sinabi, Kunin ninyo, kanin ninyo; ito ang aking katawan. At dumampot siya ng isang saro, at nagpasalamat...` },
+        { vid: "102", ref: "Hebreo 7:24-25", text: `Datapuwa't siya, sapagka't namamalagi magpakailan man ay may pagkasaserdote siyang di mapapalitan. Dahil dito naman siya'y nakapagliligtas na lubos sa mga nagsisilapit sa Dios sa pamamagitan niya...` },
+        { vid: "103", ref: "Hebreo 13:8", text: `Si Jesucristo ay siya ring kahapon at ngayon, oo at magpakailan man.` },
+        { vid: "104", ref: "Awit 32:5", text: `Aking kinilala ang aking kasalanan sa iyo, At ang aking kasamaan ay hindi ko ikinubli: Aking sinabi, aking ipahahayag ang aking pagsalangsang sa Panginoon; At iyong ipinatawad ang kasamaan ng aking kasalanan.` },
+        { vid: "104a", ref: "Awit 32:5 KJV", text: `"Aking kinikilala ang aking kasalanan sa iyo, at ang aking kasamaan ay hindi ko ikinubli. Aking sinabi, aking ikukumpisal ang aking mga pagsalangsang sa PANGINOON; at iyong ipinatawad ang kasamaanng aking kasalanan."` },
+        { vid: "105", ref: "I Juan 1:9", text: `Kung ipinahahayag natin ang ating mga kasalanan, ay tapat at banal siya na tayo'y patatawarin sa ating mga kasalanan, at tayo'y lilinisin sa lahat ng kalikuan.` },
+        { vid: "106", ref: "I Timoteo 2:5", text: `Sapagka't may isang Dios at may isang Tagapamagitan sa Dios at sa mga tao, ang taong si Cristo Jesus,` },
+        { vid: "107", ref: "Awit 88:5", text: `Nakahagis sa gitna ng mga patay, Gaya ng napatay na nakahiga sa libingan, Na hindi mo na inaalaala; At sila'y mangahiwalay sa iyong kamay.` },
+        { vid: "108", ref: "Gawa 2:29 at 34", text: `Mga kapatid, malayang masasabi ko sa inyo ang tungkol sa patriarkang si David, na siya'y namatay at inilibing, at nasa atin ang kaniyang libingan hanggang sa araw na ito. Sapagka't hindi umakyat si David sa mga langit; datapuwa't siya rin ang nagsabi, Sinabi ng Panginoon sa aking Panginoon; Maupo ka sa kanan ko,` },
+        { vid: "109", ref: "Awit 86:2", text: `Ingatan mo ang aking kaluluwa; sapagka't ako'y banal: Oh ikaw na Dios ko, iligtas mo ang iyong lingkod na tumitiwala sa iyo.` },
+        { vid: "110", ref: "Job 14:10 at 12", text: `Nguni't ang tao ay namamatay at natutunaw; Oo, ang tao ay nalalagutan ng hininga, at saan nandoon siya? Gayon ang tao ay nabubuwal at hindi na bumabangon: Hanggang sa ang langit ay mawala, sila'y hindi magsisibangon, Ni mangagigising man sa kanilang pagkakatulog.` },
+        { vid: "111", ref: "* II Pedro 3:7 at 10", text: `Nguni't ang sangkalangitan ngayon at ang lupa, sa pamamagitan ng gayon ding salita ay iningatang talaga sa apoy, na itinataan sa araw ng paghuhukom at ng paglipol sa mga taong masama. Datapuwa't darating ang araw ng Panginoon na gaya ng magnanakaw; na ang sangkalangitan sa araw na iyan ay mapaparam na kasabay ng malaking ugong...` },
+        { vid: "112", ref: "Ecclesiastes 9:5-6", text: `Sapagka't nalalaman ng mga buhay, na sila'y mangamamatay: nguni't hindi nalalaman ng patay ang anomang bagay ni mayroon pa man silang kagantihan; sapagka't ang alaala sa kanila ay nakalimutan. Maging ang kanilang pagibig, gaya ng kanilang pagtatanim...` },
+        { vid: "113", ref: "Awit 146:4", text: `Ang hininga niya ay pumapanaw, siya'y nanunumbalik sa kaniyang pagkalupa; Sa araw ding yaon ay mawawala ang kaniyang pagiisip.` },
+        { vid: "114", ref: "Mateo 25:31-34 at 41", text: `Datapuwa't pagparito ng Anak ng tao na nasa kaniyang kaluwalhatian, na kasama niya ang lahat ng mga anghel, kung magkagayo'y luluklok siya sa luklukan ng kaniyang kaluwalhatian: At titipunin sa harap niya ang lahat ng mga bansa...` },
+        { vid: "115", ref: "Juan 10:16", text: `At mayroon akong ibang mga tupa, na hindi sa kulungang ito: sila'y kailangan din namang dalhin ko, at kanilang diringgin ang aking tinig; at sila'y magiging isang kawan, at magkakaroon ng isang pastor.` },
+        { vid: "116", ref: "* Gawa 2:47", text: `Na nangagpupuri sa Diyos, at nangagtatamo ng paglingap ng buong bayan. At idinaragdag sa kanila ng Panginoon araw-araw yaong nangaliligtas.` },
+        { vid: "116a", ref: "Gawa 2:47 KJV", text: `Na nangagpupuri sa Diyos, at nangagtatamo ng paglingap ng buong bayan. At idinaragdag ng Panginoon sa iglesia araw-araw yaong mga dapat maligtas. (Praising God and having favour with all the people...)` },
+        { vid: "117", ref: "Roma 9:24", text: `Maging sa atin na kaniya namang tinawag, hindi lamang mula sa mga Judio, kundi naman mula sa mga Gentil?` },
+        { vid: "118", ref: "Isaias 43:5-6", text: `Huwag kang matakot, sapagka't ako'y sumasaiyo: aking dadalhin ang iyong lahi mula sa silanganan, at pipisanin kita mula sa kalunuran; Aking sasabihin sa hilagaan, Bayaan mo...` },
+        { vid: "118a", ref: "Isaias 43:5 Moffatt", text: `"Mula sa malayong silangan dadalhin ko ang iyong lahi at mula sa malayong kanluran titipunin kita."` },
+        { vid: "119", ref: "Isaias 59:19", text: `Sa gayo'y katatakutan nila ang pangalan ng Panginoon mula sa kalunuran, at ang kaniyang kaluwalhatian ay mula sa sikatan ng araw sapagka't siya'y darating na parang bugso ng tubig na pinayaon ng hinga ng Panginoon.` },
+        { vid: "119a", ref: "Isaias 59:19 Moffatt", text: `"hanggang sa malayong kanluran katatakutan ng mga tao ang Walang Hanggang Panginoon, at sa silangan makikita nila ang kaniyang mga kamangha-manghang gawa...` },
+        { vid: "120", ref: "Mateo 24:3 at 33", text: `At samantalang siya'y nakaupo sa bundok ng mga Olivo, ay nagsilapit sa kaniya ng bukod ang mga alagad, na nagsisipagsabi, Sabihin mo sa amin, kailan mangyayari ang mga bagay na ito? at ano ang magiging tanda ng iyong pagparito, at ng katapusan ng sanglibutan?...` },
+        { vid: "121", ref: "Lucas 10:16", text: `Ang nakikinig sa inyo, ay sa akin nakikinig; at ang nagtatakuwil sa inyo ay ako ang itinatakuwil: at ang nagtatakuwil sa akin ay itinatakuwil ang sa aki'y nagsugo.` },
+        { vid: "122", ref: "Juan 13:20", text: `Katotohanan, katotohanang sinasabi ko sa inyo, Ang tumatanggap sa sinoman sinusugo ko ay ako ang tinatanggap; at ang tumatanggap sa akin ay tinatanggap ang nagsugo sa akin.` },
+        { vid: "123", ref: "Mateo 7:24-25", text: `Kaya't ang bawa't dumirinig ng aking mga salitang ito at ginaganap, ay matutulad sa isang taong matalino, na itinayo ang kaniyang bahay sa ibabaw ng bato: At lumagpak ang ulan, at bumaha, at humihip ang mga hangin...` },
+        { vid: "124", ref: "Gawa 4:10-11", text: `Talastasin ninyong lahat, at ng buong bayan ng Israel, na sa pangalan ni Jesucristong taga Nazaret, na inyong ipinako sa krus, na binuhay ng Dios na maguli sa mga patay, dahil sa kaniya ay nakatindig ang taong ito sa inyong harap na walang sakit. Siya ang bato na itinakuwil...` },
+        { vid: "125", ref: "Mateo 16:18", text: `At sinasabi ko naman sa iyo, na ikaw ay Pedro, at sa ibabaw ng batong ito ay itatayo ko ang aking iglesia; at ang mga pintuan ng Hades ay hindi magsisipanaig laban sa kaniya.` },
+        { vid: "126", ref: "Roma 8:16-17", text: `Ang Espiritu rin ang nagpapatotoo kasama ng ating espiritu, na tayo'y mga anak ng Dios: At kung mga anak, ay mga tagapagmana nga...` },
+        { vid: "127", ref: "Isaias 41:9-10", text: `Ikaw na aking hinawakan mula sa mga wakas ng lupa, at tinawag kita mula sa mga sulok niyaon, at pinagsabihan kita, Ikaw ay aking lingkod, aking pinili ka at hindi kita itinakuwil; Huwag kang matakot, sapagka't ako'y sumasaiyo;` },
+        { vid: "128", ref: "Roma 1:16-17", text: `Sapagka't hindi ko ikinahihiya ang evangelio: sapagka't siyang kapangyarihan ng Dios sa ikaliligtas ng bawa't sumasampalataya; una'y sa Judio, at gayon din sa Griego.` },
+        { vid: "129", ref: "* Isaias 41:14", text: `Huwag kang matakot, ikaw na uod na Jacob, at kayong mga tao ng Israel; aking tutulungan ka, sabi ng Panginoon, at ang iyong Manunubos ay ang Banal ng Israel.` },
+        { vid: "130", ref: "Judas 1:23", text: `At ang iba'y inyong iligtas, na agawin ninyo sa apoy; at ang iba'y inyong kahabagan na may takot; na inyong kapootan pati ng damit na nadungisan ng laman.` },
+        { vid: "131", ref: "Awit 107:11", text: `Sapagka't sila'y nanghimagsik laban sa mga salita ng Dios, At hinamak ang payo ng Kataastaasan:` },
+        { vid: "132", ref: "Juan 6:44", text: `Walang taong makalalapit sa akin, maliban nang ang Amang nagsugo sa akin ang sa kaniya'y magdala sa akin; at siya'y aking ibabangon sa huling araw.` },
+        { vid: "133", ref: "Roma 10:14-15", text: `Paano nga silang magsisitawag doon doon sa hindi nila sinampalatayanan? At paano silang magsisisampalataya sa kaniya na hindi nila napakinggan? At paano silang mangakikinig na walang tagapangaral?` },
+        { vid: "134", ref: "Roma 16:25", text: `At ngayon sa kaniya na makapangyarihan na sa inyo'y makapagpapatibay ayon sa aking evangelio at sa pangangaral ni Jesucristo, ayon sa pahayag ng hiwaga na natago sa katahimikan nang panahong walang hanggan.` },
+        { vid: "135", ref: "II Timoteo 3:7", text: `Na laging nagsisipagaral, at kailan pa man ay hindi nakararating sa pagkaalam ng katotohanan.` },
+        { vid: "136", ref: "II Pedro 3:16", text: `Gayon din naman sa lahat ng kaniyang mga sulat, na doo'y sinasalita ang mga bagay na ito; na doo'y may ilang bagay na mahirap unawain, na isinisinsay ng mga di nakaaalam at ng mga walang tiyaga...` },
+        { vid: "137", ref: "Apocalipsis 7:1-3", text: `At pagkatapos nito ay nakita ko ang apat na anghel na nakatayo sa apat na sulok ng lupa, na pinipigil ang apat na hangin ng lupa... at siya'y sumigaw ng tinig na malakas sa apat na anghel...` },
+        { vid: "138", ref: "Lucas 1:19", text: `At pagsagot ng anghel ay sinabi sa kaniya, Ako'y si Gabriel, na nananayo sa harapan ng Dios; at ako'y sinugo upang makipagusap sa iyo, at magdala sa iyo nitong mabubuting balita.` },
+        { vid: "139", ref: "Efeso 1:13-14", text: `Na sa kaniya'y kayo rin naman, pagkarinig ng aral ng katotohanan, ng evangelio ng inyong kaligtasan, - na sa kaniya rin naman, mula nang kayo'y magsisampalataya, ay kayo'y tinatakan ng Espiritu Santo...` },
+        { vid: "140", ref: "II Corinto 5:18-20", text: `Datapuwa't ang lahat ng mga bagay ay pawang sa Dios, na pinakipagkasundo tayo sa kaniya rin sa pamamagitan ni Cristo, at ibinigay sa amin ang ministerio sa pagkakasundo;` },
+        { vid: "141", ref: "I Juan 1:3", text: `Yaong aming nakita at narinig ay siya rin naming ibinabalita sa inyo, upang kayo naman ay magkaroon ng pakikisama sa amin: oo, at tayo ay may pakikisama sa Ama, at sa kaniyang Anak na si Jesucristo:` },
+        { vid: "142", ref: "Juan 15:18-21", text: `Kung kayo'y kinapopootan ng sanglibutan, ay inyong talastas na ako muna ang kinapootan bago kayo. Kung kayo'y taga sanglibutan, ay iibigin ng sanglibutan ang kaniyang sarili...` },
+        { vid: "143", ref: "Mateo 5:10-12", text: `Mapapalad ang mga pinaguusig dahil sa katuwiran: sapagka't kanila ang kaharian ng langit. Mapapalad kayo pagka kayo'y inaalimura, at kayo'y pinaguusig, at kayo'y pinagwiwikaan ng sarisaring masama...` },
+        { vid: "144", ref: "Mateo 10:36-37", text: `At ang magiging kaaway ng tao ay ang kaniya ring sariling kasangbahay. Ang umiibig sa ama o sa ina ng higit kay sa akin ay hindi karapatdapat sa akin; at ang umiibig sa anak na lalake...` },
+        { vid: "145", ref: "I Pedro 4:14-16", text: `Kung kayo'y mapintasan dahil sa pangalan ni Cristo, ay mapapalad kayo; sapagka't ang Espiritu ng kaluwalhatian at ang Espiritu ng Dios ay nagpapahingalay sa inyo.` },
+        { vid: "146", ref: "Marcos 8:38", text: `Sapagka't ang sinomang magmakahiya sa akin at sa aking mga salita sa lahing ito na mapangalunya at makasalanan, ay ikahihiya rin naman siya ng Anak ng tao, pagparito niyang nasa kaluwalhatian...` },
+        { vid: "147", ref: "Gawa 5:40-42", text: `At sila'y nagsisangayon sa kaniya: at pagkatawag nila sa mga apostol, ay pinalo nila at ibinala sa kanila na huwag silang mangagsalita sa pangalan ni Jesus, at sila'y pinawalan.` },
+        { vid: "148", ref: "Daniel 6:7-10", text: `Ang lahat ng pangulo ng kaharian, ang mga kinatawan at mga satrapa, ang mga kasangguni at ang mga gobernador, ay nangagsanggunian upang magtatag ng isang palatuntunang hari sa kaharian...` },
+        { vid: "149", ref: "Lucas 18:28-30", text: `At sinabi ni Pedro, Narito, iniwan namin ang aming sarili, at nagsisunod sa iyo. At sinabi niya sa kanila, Katotohanang sinasabi ko sa inyo, Walang taong nagiwan ng bahay, o asawang babae...` },
+        { vid: "150", ref: "II Tesalonica 1:4-5", text: `Ano pa't kami sa aming sarili ay nangagkakapuri sa inyo sa mga iglesia ng Dios dahil sa inyong pagtitiis at pananampalataya sa lahat ng mga paguusig sa inyo at sa mga kapighatiang inyong tinitiis;` },
+		{ vid: "151", ref: "Apocalipsis 7:13-17", text: `At sumagot ang isa sa matatanda na, nagsasabi sa akin, Ang mga ito na nangadaramtan ng mapuputing damit, ay sino-sino at saan nagsipanggaling? At sinabi ko sa kaniya...` },
+        { vid: "152", ref: "Roma 5:2", text: `Sa pamamagitan din naman niya'y nangagkaroon tayo ng ating pagpasok sa pamamagitan ng pananampalataya sa biyayang ito na diyan ay nagsisilagi tayo; at nangagagalak tayo sa pagasa ng kaluwalhatian ng Dios.` },
+        { vid: "153", ref: "Hebreo 11:6", text: `At kung walang pananampalataya ay hindi maaaring maging kalugodlugod sa kaniya; sapagka't ang lumalapit sa Dios ay dapat sumampalatayang may Dios, at siya ang tagapagbigay ganti sa mga sa kaniya'y nagsisihanap.` },
+        { vid: "154", ref: "Juan 3:18", text: `Ang sumasampalataya sa kaniya ay hindi hinahatulan; ang hindi sumasampalataya ay hinatulan na, sapagka't hindi siya sumasampalataya sa pangalan ng bugtong na Anak ng Dios.` },
+        { vid: "155", ref: "Apocalipsis 21:8", text: `Nguni't sa mga duwag, at sa mga hindi mananampalataya, at sa mga kasuklamsuklam, at sa mga mamamatay-tao, at sa mga mapakiapid, at sa mga manggagaway, at sa mga mapagsamba sa diosdiosan, at sa lahat na mga sinungaling, ang kanilang bahagi ay sa dagatdagatang nagniningas sa apoy at asupre...` },
+        { vid: "156", ref: "Juan 6:25-26", text: `At nang siya'y kanilang masumpungan sa kabilang ibayo ng dagat, ay kanilang sinabi sa kanila, Rabi, kailan ka dumating dito? Sinagot sila ni Jesus at sinabi, Katotohanan, katotohanang sinasabi ko sa inyo, Ako'y inyong hinahanap...` },
+        { vid: "157", ref: "Juan 6:27-29", text: `Magsigawa kayo hindi dahil sa pagkain napapanis, kundi dahil sa pagkaing tumatagal sa buhay na walang hanggan, na ibibigay sa inyo ng Anak ng tao... Ito ang gawa ng Dios, na inyong sampalatayanan yaong kaniyang sinugo.` },
+        { vid: "158", ref: "Juan 6:64 at 66", text: `Datapuwa't may ilan sa inyong hindi nagsisisampalataya. Sapagka't talastas na ni Jesus buhat pa nang una kung sino-sino ang hindi nagsisisampalataya, at kung sino ang sa kaniya'y magkakanulo... Dahil dito'y marami sa kaniyang mga alagad ay nagsitalikod...` },
+        { vid: "159", ref: "Juan 6:60-61", text: `Marami nga sa kaniyang mga alagad, nang kanilang marinig ito, ay nangagsabi, Matigas ang pananalitang ito; sino ang makaririnig noon? Datapuwa't pagkaalam ni Jesus sa kaniyang sarili na nagbubulongbulungan ang kaniyang mga alagad...` },
+        { vid: "160", ref: "Juan 6:67-69", text: `Sinabi nga ni Jesus sa labingdalawa, Ibig baga ninyong magsialis din naman? Sinagot siya ni Simon Pedro, Panginoon, kanino kami magsisiparoon? ikaw ang may mga salita ng buhay na walang hanggan.` },
+        { vid: "161", ref: "Hebreo 11:1", text: `Ngayon, ang pananampalataya ay siyang kapanatagan sa mga bagay na hinihintay, ang katunayan ng mga bagay na hindi nakikita.` },
+        { vid: "162", ref: "Roma 4:18-21", text: `Siya na sumampalataya na nasa pagasa laban sa pagasa, upang maging ama ng maraming bansa ayon sa sabi, Magiging gayon ang iyong binhi... At lubos nanalig na ang Dios na nangako ay may kapangyarihang makagawa noon.` },
+        { vid: "163", ref: "Colosas 1:23", text: `Kung tunay na kayo'y mamamalagi sa pananampalataya, na nababaon at matitibay, at di makilos sa pag-asa sa evangelio na inyong narinig, na ipinangaral sa lahat ng mga nilalang sa silong ng langit;` },
+        { vid: "164", ref: "Mateo 7:26-27", text: `At ang bawa't dumirinig ng aking mga salitang ito at hindi ginaganap, ay matutulad sa isang taong mangmang, na itinayo ang kaniyang bahay sa buhanginan: At lumagpak ang ulan, at bumaha, at humihip ang mga hangin, at hinampas ang bahay na yaon...` },
+        { vid: "165", ref: "Juan 14:1-2", text: `Huwag magulumihanan ang inyong puso: magsisampalataya kayo sa Dios, magsisampalataya naman kayo sa akin. Sa bahay ng aking Ama ay maraming tahanan; kung di gayon, ay sinabi ko sana sa inyo...` },
+        { vid: "166", ref: "Marcos 16:15-16", text: `At sinabi niya sa kanila, Magsiyaon kayo sa buong sanglibutan, at inyong ipangaral ang evangelio sa lahat ng kinapal. Ang sumasampalataya at mabautismuhan ay maliligtas; datapuwa't ang hindi sumasampalataya ay parurusahan.` },
+        { vid: "167", ref: "Juan 6:29", text: `Sumagot si Jesus sa kanila'y sinabi, Ito ang gawa ng Dios, na inyong sampalatayanan yaong kaniyang sinugo.` },
+        { vid: "168", ref: "Mateo 3:17", text: `At narito, ang isang tinig na mula sa mga langit, na nagsasabi, Ito ang sinisinta kong Anak, na siya kong lubos na kinalulugdan.` },
+        { vid: "169", ref: "Gawa 2:36", text: `Pakatalastasin nga ng buong angkan ni Israel, na ginawa ng Dios na Panginoon at Cristo itong si Jesus na inyong ipinako sa krus.` },
+        { vid: "170", ref: "Gawa 5:31", text: `Siya'y pinadakila ng Dios ng kaniyang kanang kamay upang maging Principe at Tagapagligtas, upang magbigay ng pagsisisi sa Israel, at kapatawaran ng mga kasalanan.` },
+        { vid: "171", ref: "Efeso 1:20-22", text: `Na kaniyang ginawa kay Cristo, nang ito'y kaniyang buhaying maguli sa mga patay, at pinaupo sa kaniyang kanan sa sangkalangitan, Sa kaibaibabawan ng lahat na pamunuan, at kapamahalaan, at kapangyarihan...` },
+        { vid: "172", ref: "Filipos 2:9-11", text: `Kaya siya naman ay pinakadakila ng Dios, at siya'y binigyan ng pangalang lalo sa lahat ng pangalan; Upang sa pangalan ni Jesus ay iluhod ang lahat ng tuhod, ng nangasa langit...` },
+        { vid: "173", ref: "Filipos 2:5 at 8", text: `Mangagkaroon kayo sa inyo ng pagiisip, na ito'y na kay Cristo Jesus din naman: At palibhasa'y nasumpungan sa anyong tao, siya'y nagpakababa sa kaniyang sarili, na nagmasunurin hanggang sa kamatayan, oo, sa kamatayan sa krus.` },
+        { vid: "174", ref: "I Corinto 15:27-28", text: `Sapagka't kaniyang pinasuko ang lahat ng mga bagay sa ilalim ng kaniyang paa. Datapuwa't kung sinasabi, ang lahat ng mga bagay ay pinasuko, ay maliwanag na itinangi yaong nagpasuko ng lahat ng mga bagay sa kaniya.` },
+        { vid: "175", ref: "Juan 10:36", text: `Sinasabi baga ninyo tungkol sa kaniya, na pinabanal ng Ama at sinugo sa sanglibutan, Ikaw ay namumusong; sapagka't sinabi ko, Ako ang anak ng Dios?` },
+        { vid: "176", ref: "* Jeremias 33:22", text: `Kung paanong ang lahat na natatanaw sa langit ay hindi mabibilang, o matatakal man ang buhangin sa dagat; gayon ko pararamihin ang binhi ni David na aking lingkod, at ang mga Levita na nagsisipangasiwa sa akin.` },
+        { vid: "176a", ref: "Jeremias 33:22 MB", text: `Gaya ng di mabilang na bituin sa kalangitan at ng buhangin sa dagat, gayon ko pararamihin ang mga inapong aking lingkod na si David at ng mga Levitang naglilingkod sa akin.` },
+        { vid: "177", ref: "Oseas 11:9", text: `Hindi ko isasagawa ang kabangisan ng aking galit, hindi ako babalik upang ipahamak ang Ephraim: sapagka't ako'y Dios, at hindi tao; ang Banal sa gitna mo; at hindi ako paroroon na may galit.` },
+        { vid: "178", ref: "Ezekiel 28:2", text: `Anak ng tao, sabihin mo sa prinsipe sa Tiro, Ganito ang sabi ng Panginoong Dios: Sapagka't ang iyong puso ay nagmataas, at iyong sinabi, Ako'y dios, ako'y nauupo sa upuan ng Dios, sa gitna ng mga dagat; gayon man ikaw ay tao, at hindi Dios...` },
+        { vid: "179", ref: "II Corinto 11:3-4", text: `Nguni't ako'y natatakot, baka sa anomang paraan, kung paanong si Eva ay nadaya ng ahas sa kaniyang katusuhan, ang inyong walang malay at malinis na mga pagiisip na kay Cristo ay pasamain.` },
+        { vid: "180", ref: "Awit 90:2", text: `Bago nalabas ang mga bundok, O bago mo nilikha ang lupa at ang sanglibutan, Mula nga ng walang pasimula hanggang sa walang hanggan, ikaw ang Dios.` },
+        { vid: "181", ref: "Juan 8:40 at 42", text: `Datapuwa't ngayo'y pinagsisikapan ninyo akong patayin, na taong sa inyo'y nagsaysay ng katotohanan, na aking narinig sa Dios: ito'y hindi ginawa ni Abraham... Sinabi sa kanila ni Jesus, Kung ang Dios ang inyong ama, ay inyong iibigin ako...` },
+        { vid: "182", ref: "I Timoteo 1:17", text: `Ngayon sa Haring walang hanggan, walang kamatayan, di nakikita, sa iisang Dios, ay ang kapurihan at kaluwalhatian magpakailan kailan man. Siya nawa.` },
+        { vid: "183", ref: "Juan 19:30 at 33", text: `Nang matanggap nga ni Jesus ang suka, ay sinabi niya, Naganap na: at iniyukayok ang kaniyang ulo, at nalagot ang kaniyang hininga. Ngunit nang magsiparoon sila kay Jesus, at makitang siya'y patay na, ay hindi na nila inumog ang kaniyang mga hita:` },
+        { vid: "184", ref: "Isaias 44:8", text: `Kayo'y huwag mangatakot, o magsipangilabot man: hindi ko baga ipinanayag sa iyo nang una, at ipinakilala? at kayo ang aking mga saksi. May Dios baga liban sa akin? oo, walang malaking Bato; ako'y walang nakikilalang iba.` },
+        { vid: "185", ref: "Marcos 15:34", text: `At nang oras na ikasiyam ay sumigaw si Jesus ng malakas na tinig: Eloi, Eloi, lama sabacthani? na kung liliwanagin ay, Dios ko, Dios ko, bakit mo ako pinabayaan?` },
+        { vid: "186", ref: "Isaias 40:28", text: `Hindi mo baga naalaman? hindi mo baga narinig? ang walang hanggang Dios, ang Panginoon, ang Maylalang ng mga wakas ng lupa, hindi nanlalata, o napapagod man; walang makatarok ng kaniyang unawa.` },
+        { vid: "187", ref: "Juan 4:6", text: `At naroon ang balon ni Jacob. Si Jesus nga, nang napapagod na sa kaniyang paglalakbay, ay naupong gayon sa tabi ng balon. Magiikaanim na nga ang oras.` },
+        { vid: "188", ref: "Lucas 24:36-37", text: `At samantalang kanilang pinaguusapan ang mga bagay na ito, siya rin ay tumayo sa gitna nila, at sa kanila'y nagsabi, Kapayapaa'y suma inyo. Datapuwa't sila'y kinilabutan, at nangahintakutan, at inakala nila na nakakakita sila ng isang espiritu.` },
+        { vid: "189", ref: "Lucas 24:38-39", text: `At sinabi niya sa kanila, Bakit Kayo'y nangagugulumihanan? at bakit nangyayari ang pagtatalo sa inyong puso? Tingnan ninyo ang aking mga kamay at ang aking mga paa, ako rin nga: hipuin ninyo ako, at tingnan; sapagka't ang isang espiritu'y walang laman at mga buto...` },
+        { vid: "190", ref: "Juan 20:17", text: `Sinabi sa kaniya ni Jesus, Huwag mo akong hipuin; sapagka't hindi pa ako nakakaakyat sa Ama, nguni't pumaroon ka sa aking mga kapatid, at sabihin mo sa kanila, Aakayat ako sa aking Ama at inyong Ama, at aking Dios at inyong Dios.` },
+        { vid: "191", ref: "* Gawa 2:22-24", text: `Kayong mga lalaking taga Israel, pakinggan ninyo ang mga salitang ito: Si Jesus na taga Nazaret, lalaking pinatunayan ng Diyos sa inyo sa pamamagitan ng mga gawang makapangyarihan at mga kababalaghan at mga tanda... siya'y binuhay na maguli ng Dios...` },
+        { vid: "192", ref: "Gawa 19:11-12", text: `At gumawa ang Dios ng mga tanging himala sa pamamagitan ng mga kamay ni Pablo: Ano pa't ang mga panyo o mga tapi na mapadaiti sa kaniyang katawan ay dinadala sa mga maysakit, at nawawala sa kanila ang mga sakit, at nangagsisilabas ang masasamang espiritu.` },
+        { vid: "193", ref: "Juan 5:30", text: `Hindi ako makagagawa ng anoman sa aking sarili: humahatol ako ayon sa aking naririnig: at ang paghatol ko'y matuwid; sapagka't hindi ko pinaghahanap ang aking sariling kalooban, kundi ang kalooban niyaong nagsugo sa akin.` },
+        { vid: "194", ref: "Juan 1:1,14", text: `Nang pasimula siya ang Verbo, at ang Verbo ay sumasa Dios, at ang Verbo ay Dios. At nagkatawang-tao ang Verbo, at tumahan sa gitna natin (at nakita namin ang kaniyang kaluwalhatian, kaluwalhatin gaya ng sa bugtong ng Ama), na puspos ng biyaya at katotohanan.` },
+        { vid: "195", ref: "I Pedro 1:20", text: `Na nakilala nga nang una bago itinatag ang sanglibutan, ngunit inihayag sa mga huling panahon dahil sa inyo.` },
+        { vid: "195a", ref: "I Pedro 1:20 BTK", text: `Nasa isip na Siya ng Diyos bago pa lalangin ang daigdig nguni't ipinakilala Siya ngayong huling panahon.` },
+        { vid: "196", ref: "Galacia 4:4", text: `Datapuwa't nang dumating ang kapanahunan, ay sinugo ng Dios ang kaniyang Anak, na ipinanganak ng isang babae, na ipinanganak sa ilalim ng kautusan,` },
+        { vid: "197", ref: "Lucas 1:37", text: `Sapagka't walang salitang mula sa Dios na di may kapangyarihan.` },
+        { vid: "198", ref: "Genesis 35:11", text: `At sinabi sa kaniya ng Dios, Ako ang Dios na Makapangyarihan sa lahat; ikaw ay lumago at dumami ka; isang bansa at isang kapisanan ng mga bansa ang magmumula sa iyo, at mga hari ay lalabas sa iyong balakang;` },
+        { vid: "199", ref: "Mateo 1:18 at 20", text: `Ang pagkapanganak nga kay Jesucristo ay ganito: Nang si Maria na kaniyang ina ay magaasawa kay Jose, bago sila magsama ay nasumpungang siya'y nagdadalang-tao sa pamamagitan ng Espiritu Santo...` },
+        { vid: "200", ref: "I Juan 5:20", text: `At nalalaman natin na naparito ang Anak ng Dios, at tayo'y binigyan ng pagkaunawa, upang ating makilala siya na totoo, at tayo'y nasa kaniya na totoo, sa makatuwid ay sa kaniyang Anak na si Jesucristo. Ito ang tunay na Dios, at ang buhay na walang hanggan.` },
+		{ vid: "201", ref: "Roma 9:5", text: `Na sa kanila ang mga magulang, at sa kanila mula ang Cristo ayon sa laman, na siyang lalo sa lahat, Dios na maluwalhati magpakailan man. Siya nawa.` },
+        { vid: "201a", ref: "Roma 9:5 RSV", text: `"na sa kanila ang mga magulang, at sa kanilang lahi, ayon sa laman, ay ang Cristo. Ang Diyos na nasa ibabaw ng lahat ay purihin magpakailanman. Siya nawa."` },
+        { vid: "202", ref: "II Corinto 1:3", text: `Purihin nawa ang Dios at Ama ng ating Panginoong Jesucristo, ang Ama ng mga kaawaan at Dios ng buong kaaliwan;` },
+        { vid: "203", ref: "Isaias 9:6", text: `Sapagka't sa atin ay ipinanganak ang isang bata, sa atin ay ibinigay ang isang anak na lalake; at ang pamamahala ay maaatang sa kaniyang balikat: at ang kaniyang pangalan ay tatawaging kamanghamangha, Tagapayo, Makapangyarihang Dios, Walang hanggang Ama, Pangulo ng Kapayapaan` },
+        { vid: "203a", ref: "Isaias 9:6 Jewish Publications Society", text: `"Sa atin ay ipinanganak ang isang bata, isang anak na lalake ay ibinigay sa atin; at ang pamamahala ay nasa kaniyang balikat; at ang kaniyang pangalan ay tatawaging PELE- JOEZ-EL- GIBBOR-ABI-AD- SAR-SHALOM;"` },
+        { vid: "203b", ref: "Isaias 9:6 Moffatt", text: `Sapagkat sa atin, ay isang bata ang ipinanganak, isang batang lalake ay ibinigay sa atin; ang maharlikang karangalan ay suot niya, at ito ang titulo na taglay niya 'Isang kamangha-manghang tagapayo, isang banal na bayani, isang ama para sa lahat ng panahon, isang prinsipe ng kapayapaan!'` },
+        { vid: "204", ref: "* Jeremias 26:2", text: `Ganito ang sabi ng Panginoon, Tumayo ka sa looban ng bahay ng Panginoon at salitain mo sa lahat ng bayan ng Juda, na nagsisiparoon upang magsisamba sa bahay ng Panginoon, ang lahat na salita na iniutos ko sa iyo upang salitain sa kanila; huwag kang magbawas ng kahit isang salita.` },
+        { vid: "205", ref: "Isaias 9:7", text: `Ang paglago ng kaniyang pamamahala at ng kapayapaan ay hindi magkakaroon ng wakas, sa luklukan ni David, at sa kaniyang kaharian, upang itatag, at upang alalayan ng kahatulan at ng katuwiran mula ngayon hanggang sa magpakailan man.` },
+        { vid: "206", ref: "Mateo 28:18-19", text: `At lumapit si Jesus sa kanila at sila'y kaniyang kinausap, na sinasabi, Ang lahat ng kapamahalaan sa langit at sa ibabaw ng lupa ay naibigay na sa akin. Dahil dito magsiyaon nga kayo, at gawin ninyong mga alagad ang lahat ng mga bansa, na sila'y inyong bautismuhan sa pangalan ng Ama at ng Anak at ng Espiritu Santo:` },
+        { vid: "207", ref: "Isaias 53:3", text: `Siya'y hinamak at itinakuwil ng mga tao; isang taong sa kapanglawan, at bihasa sa karamdaman: at gaya ng isa na pinagkublihan ng kanilang mukha ng mga tao, na siya'y hinamak, at hindi natin hinalagahan siya.` },
+        { vid: "208", ref: "Juan 14:26", text: `Datapuwa't ang Mangaaliw, sa makatuwid baga'y ang Espiritu Santo, na susuguin ng Ama sa aking pangalan, siya ang magtuturo sa inyo ng lahat ng mga bagay, at magpapaalaala ng lahat na sa inyo'y aking sinabi.` },
+        { vid: "209", ref: "Juan 15:26", text: `Datapuwa't pagparito ng Mangaaliw, na aking susuguin sa inyo mula sa Ama, sa makatuwid baga'y ang Espiritu ng katotohanan, na nagbubuhat sa Ama, ay siyang magpapatotoo sa akin:` },
+        { vid: "210", ref: "Apocalipsis 5:6", text: `At nakita ko sa gitna ng luklukan at ng apat na nilalang na buhay, at sa gitna ng matatanda, ang isang Cordero na nakatayo, na wari ay pinatay, na may pitong sungay, at pitong mata, na siyang pitong Espiritu ng Dios, na sinugo sa buong lupa.` },
+        { vid: "211", ref: "II Corinto 5:17", text: `Kaya't kung ang sinoman ay na kay Cristo, siya'y bagong nilalang: ang mga dating bagay ay nagsilipas na; narito, sila'y pawang naging mga bago.` },
+        { vid: "212", ref: "Efeso 4:21-22", text: `Kung tunay na siya'y inyong pinakinggan, at kayo'y tinuruan sa kaniya, gaya ng katotohanan na kay Jesus. At inyong iwan, tungkol sa paraan ng inyong pamumuhay na nakaraan, ang dating pagkatao, na sumama ng sumama ayon sa mga kahalayan ng pagdaraya;` },
+        { vid: "213", ref: "Efeso 4:23-24", text: `At kayo'y mangagbago sa espiritu ng inyong pagiisip, At kayo'y mangagbihis ng bagong pagkatao, na ayon sa Dios ay nilalang sa katuwiran at sa kabanalan ng katotohanan.` },
+        { vid: "214", ref: "I Corinto 6:9-10", text: `O hindi baga ninyo nalalaman na ang mga liko ay hindi magsisipagmana ng kaharian ng Dios? Huwag kayong padaya: kahit ang mga mapakiapid, ni ang mga mananamba sa diosdiosan, ni ang mga mangangalunya... Ni ang mga magnanakaw, ni ang mga masasakim... ay hindi mangagmamana ng kaharian ng Dios.` },
+        { vid: "215", ref: "Oseas 13:13-14 MB", text: `Ang Israel ay binigyan ko ng pagkakataong magbagong buhay, ngunit tinanggihan. Para siyang batang ayaw lumabas sa sinapupunan. Siya'y anak na suwail at mangmang! Hindi ko sila paliligtasin sa impiyerno. Hindi ko sila ililigtas sa kamatayan...` },
+        { vid: "216", ref: "Job 18:5 at 18", text: `Oo, ang ilaw ng masama ay papatayin, At ang liyab ng kaniyang apoy ay hindi liliwanag. Siya'y ihahatid sa kadiliman mula sa liwanag, At itatapon sa labas ng sanglibutan.` },
+        { vid: "217", ref: "Colosas 3:5-9", text: `Patayin nga ninyo ang inyong mga sangkap ng katawang nangasa ibabaw ng lupa, pakikiapid, karumihan, masamang pita, masamang nasa, at kasakiman, na iya'y pagsamba sa mga diosdiosan...` },
+        { vid: "218", ref: "Galacia 5:19-21", text: `At hayag ang mga gawa ng laman, sa makatuwid ay ang mga ito: pakikiapid, karumihan, kalibugan, Pagsamba sa diosdiosan, pangkukulam, mga pagtataniman, mga pagtatalo... na ang mga nagsisigawa ng gayong mga bagay ay hindi magsisipagmana ng kaharian ng Dios.` },
+        { vid: "219", ref: "Mateo 3:8 at 10", text: `Kayo nga'y mangagbunga ng karapatdapat sa pagsisisi: At ngayon pa'y nakalagay na ang palakol sa ugat ng mga punong kahoy: ang bawa't punong kahoy nga na hindi nagbubungang mabuti ay pinuputol at inihahagis sa apoy.` },
+        { vid: "220", ref: "Kawikaan 22:6", text: `Turuan mo ang bata sa daan na dapat niyang lakaran, at pagka tumanda man siya ay hindi niya hihiwalayan.` },
+        { vid: "221", ref: "Isaias 55:7", text: `Lisanin ng masama ang kaniyang lakad, at ng liko ang kaniyang mga pagiisip; at manumbalik siya sa Panginoon, at kaaawaan niya siya; at sa aming Dios, sapagka't siya'y magpapatawad ng sagana.` },
+        { vid: "222", ref: "Isaias 1:18-20", text: `Magsiparito kayo ngayon, at tayo'y magkatuwiranan, sabi ng Panginoon: bagaman ang inyong mga kasalanan ay maging tila mapula, ay magiging mapuputi na parang niebe... Kung kayo'y magkusa at mangagmasunurin, kayo'y magsisikain ng buti ng lupain...` },
+        { vid: "223", ref: "Hebreo 13:15-16", text: `Sa pamamagitan nga niya ay maghandog tayong palagi ng hain ng pagpupuri sa Dios, sa makatuwid baga, ay ng bunga ng mga labi na nagpapahayag ng kaniyang pangalan. Datapuwa't ang paggawa ng mabuti at ang pagabuloy ay huwag ninyong kalimutan...` },
+        { vid: "224", ref: "II Corinto 9:7-8", text: `Magbigay ang bawa't isa ayon sa ipinasiya ng kaniyang puso: huwag mabigat sa loob, o dahil sa kailangan: sapagka't iniibig ng Dios ang nagbibigay na masaya.` },
+        { vid: "225", ref: "Galacia 6:5-6", text: `Sapagka't ang bawa't tao ay magpapasan ng kaniyang sariling pasan. Datapuwa't ang tinuturuan sa aral ng Dios ay makidamay doon sa nagtuturo sa lahat ng mga bagay na mabuti.` },
+        { vid: "226", ref: "II Corinto 9:12-13", text: `Sapagka't ang pangangasiwa sa paglilingkod na ito ay hindi lamang tumatakip sa pangangailangan ng mga banal, kundi naman umaapaw sa pamamagitan ng maraming pagpapasalamat sa Dios;` },
+        { vid: "227", ref: "I Corinto 16:2 NPV", text: `Tuwing unang araw ng sanlinggo, bawat isa sa inyo'y magbukod ng isang halaga ayon sa kanyang kinikita para pagpariyan ko ay hindi na kailangang lumikom pa.` },
+        { vid: "228", ref: "II Corinto 9:2 at 5", text: `Sapagka't nakikilala ko ang inyong sikap, na aking ipinagmamapuri tungkol sa inyo sa mga taga Macedonia... Iniisip ko ngang kailangang ipamanhik sa mga kapatid, na mangaunang pumariyan sa inyo, at ihanda agad ang inyong abuloy...` },
+        { vid: "229", ref: "Hagai 1:8", text: `Magsiahon kayo sa bundok, at mangagdala ng kahoy, at mangagtayo kayo ng bahay; at aking kalulugdan, at ako'y luluwalhati, sabi ng Panginoon.` },
+        { vid: "230", ref: "I Kronika 29:11-12", text: `Iyo, Oh Panginoon ang kadakilaan, at ang kapangyarihan, at ang kaluwalhatian, at ang pagtatagumpay, at ang karangalan: sapagka't lahat na nangasa langit at nangasa lupa ay iyo...` },
+        { vid: "231", ref: "I Kronika 29:9", text: `Nang magkagayo'y nagalak ang bayan, dahil sa sila'y nangaghandog na kusa, sapagka't sila'y may dalisay na puso na nangaghandog na kusa sa Panginoon: at si David naman na hari ay nagalak ng dakilang pagkagalak.` },
+        { vid: "232", ref: "II Corinto 8:1-3", text: `Bukod dito, mga kapatid, ay ipinatatalastas namin sa inyo ang biyaya ng Dios na ipinagkaloob sa mga iglesia ng Macedonia; Kung paanong sa maraming pagsubok sa kapighatian ang kasaganaan ng kanilang katuwaan at ang kanilang malabis na karukhaan ay sumagana...` },
+        { vid: "233", ref: "Awit 50:14 at 23", text: `Ihandog mo sa Dios ang hain pasasalamat: At tuparin mo ang iyong mga panata sa Kataastaasan: Ang naghahandog ng haing pasasalamat ay lumuluwalhati sa akin;` },
+        { vid: "234", ref: "I Tesalonica 5:18", text: `Sa lahat ng mga bagay ay magpasalamat kayo; sapagka't ito ang kalooban ng Dios kay Cristo tungkol sa inyo.` },
+        { vid: "235", ref: "* Kawikaan 8:22-23", text: `Inari ako ng Panginoon sa pasimula ng kaniyang lakad, Bago pinasimulan ang kaniyang mga gawa ng una. Ako'y nalagay mula noong araw mula ng walang pasimula, Bago nalikha ang lupa.` },
+        { vid: "236", ref: "I Kronika 16:8-9", text: `Oh kayo'y mangagpasalamat sa Panginoon, magsitawag kayo sa kaniyang pangalan; Ipakilala ninyo sa mga bayan ang kaniyang mga gawa. Magsiawit kayo sa kaniya, magsiawit kayo ng mga pagpuri sa kaniya;` },
+        { vid: "237", ref: "I Kronika 16:29", text: `Inyong ibigay sa Panginoon ang kaluwalhatiang marapat sa kaniyang pangalan: Mangagdala kayo ng handog, at magsiparoon kayo sa harap niya: Inyong sambahin ang Panginoon sa ganda ng kabanalan.` },
+        { vid: "238", ref: "I Timoteo 6:18-19", text: `Na sila'y magsigawa ng mabuti, na sila'y magsiyaman sa mabuting gawa, na sila'y maging handa sa pamimigay, maibigin sa pamamahagi; Na mangagtipon sa kanilang sarili ng isang mabuting kinasasaligan para sa panahong darating...` },
+        { vid: "239", ref: "I Pedro 2:17", text: `Igalang ninyo ang lahat ng mga tao. Ibigin ninyo ang pagkakapatiran. Mangatakot kayo sa Dios. Igalang ninyo ang hari.` },
+        { vid: "240", ref: "Juan 13:34-35", text: `Isang bagong utos ang sa inyo'y ibinibigay ko, na kayo'y mangagibigan sa isa't isa: na kung paanong iniibig ko kayo, ay mangagibigan naman kayo sa isa't isa.` },
+        { vid: "241", ref: "Mateo 23:8-9", text: `Datapuwa't kayo'y huwag patawag na Rabi: sapagka't iisa ang inyong guro, at kayong lahat ay magkakapatid. At huwag ninyong tawaging inyong ama ang sinomang tao sa lupa: sapagka't iisa ang inyong ama, sa makatuwid baga'y siya na nasa langit.` },
+        { vid: "242", ref: "I Juan 3:17", text: `Datapuwa't ang sinomang mayroong mga pagaari sa sanglibutang ito, at nakikita ang kaniyang kapatid na nangangailangan, at doo'y ipagkait ang kaniyang awa, paanong mananahan ang pagibig ng Dios sa kaniya?` },
+        { vid: "243", ref: "II Tesalonica 3:6", text: `Aming inuutos nga sa inyo, mga kapatid, sa pangalan ng ating Panginoong Jesucristo, na kayo'y magsihiwalay sa bawa't kapatid na lumalakad ng walang kaayusan, at hindi ayon sa aral na tinanggap nila sa amin.` },
+        { vid: "244", ref: "II Tesalonica 3:10-12", text: `Sapagka't noon pa mang kami ay kasama ninyo, ay aming iniutos ito sa inyo, Kung ang sinoman ay ayaw gumawa, ay huwag din namang kumain. Sapagka't aming nababalitaan ang ilan sa inyo na nagsisilakad ng walang kaayusan...` },
+        { vid: "245", ref: "Santiago 5:9", text: `Huwag kayong mangagupasalaan, mga kapatid, laban sa isa't isa, upang kayo'y huwag mahatulan; narito, ang hukom ay nakatayo sa harapan ng mga pinto.` },
+        { vid: "246", ref: "I Pedro 3:8-10", text: `Katapustapusan, kayong lahat ay mangagkaisang akala, madamayin, mangagibigang tulad sa magkakapatid, mga mahabagin, mga mapagkumbabang pagiisip: Na huwag ninyong gantihin ng masama ang masama...` },
+        { vid: "247", ref: "I Corinto 6:8", text: `Nguni't kayo rin ang mga nagsisigawa ng kalikuan, at nangagdaraya, at ito'y sa mga kapatid ninyo.` },
+        { vid: "248", ref: "I Corinto 6:4 at 6 MB", text: `Kung kayo'y may usapin, idudulog pa ba ninyo ito sa mga taong di kinikilala ng iglesya? Ano't nagsasakdal pa kayo sa hukuman, kapatid laban sa kapatid, at sa harapan pa ng mga taong walang pananampalataya?` },
+        { vid: "249", ref: "Mateo 18:15-17 MB", text: `Kung magkasala sa iyo ang kapatid mo, puntahan mo siya at kausapin nang sarilinan. Kapag nakinig siya sa iyo, ang pagsasama ninyong magkapatid ay napapanauli mo sa dati at napapanumbalik mo siya sa Ama.` },
+        { vid: "250", ref: "Efeso 2:11-12", text: `Kaya nga alalahanin ninyo, na kayo noong una, mga Gentil sa laman, tinatawag na Di-pagtutuli niyaong tinatawag na pagtutuli sa laman... Na kayo nang panahong yaon ay mga hiwalay kay Cristo, na mga di kabilang sa bansa ng Israel...` },
+		{ vid: "251", ref: "Mateo 5:23-26", text: `Kaya't kung inihahandog mo ang iyong hain sa dambana, at doo'y maalaala mo na ang iyong kapatid ay mayroong anomang laban sa iyo, Iwan mo roon sa harap ng dambana ang hain mo...` },
+        { vid: "252", ref: "Efeso 4:32", text: `At magmagandang-loob kayo sa isa't isa, mga mahabagin, na mangagpatawaran kayo sa isa't isa, gaya naman ng pagpapatawad sa inyo ng Dios kay Cristo.` },
+        { vid: "253", ref: "I Juan 3:14-15", text: `Nalalaman nating tayo'y nangalipat na sa buhay mula sa kamatayan, sapagka't tayo'y nagsisiibig sa mga kapatid. Ang hindi umiibig ay nananahan sa kamatayan. Ang sinomang napopoot sa kaniyang kapatid ay mamamatay-tao...` },
+        { vid: "254", ref: "Genesis 9:1-4", text: `At binasbasan ng Dios si Noe at ang kaniyang mga anak, at sa kanila'y sinabi, Kayo'y magpalaanakin, at magpakarami at inyong kalatan ang lupa... Ngunit ang lamang may buhay, na siya niyang dugo, ay huwag ninyong kakanin.` },
+        { vid: "255", ref: "Gawa 21:25 MB", text: `Tungkol naman sa mga mananampalatayang Hentil, isinulat na namin sa kanila ang aming pasiya: huwag silang kakain ng anumang inihandog sa diyus-diyusan, ng dugo at ng hayop na binigti, at huwag makikiapid.` },
+        { vid: "256", ref: "Deuteronomio 12:22-23", text: `Kung paano ang pagkain sa maliit at malaking usa, ay gayon kakanin; ang marumi at ang malinis ay kapuwang makakakain niyaon. Lamang ay pagtibayin mong hindi mo kakanin ang dugo: sapagka't ang dugo ay siyang buhay...` },
+        { vid: "257", ref: "Levitico 17:11 MB", text: `Sapagkat ang buhay ay nasa dugo at iniuutos ko na dapat ihandog iyon sa dambana bilang pantubos sa inyong buhay.` },
+        { vid: "258", ref: "Hebreo 10:1", text: `Sapagka't ang kautusan na may isang anino ng mabubuting bagay na darating, hindi ang tunay na larawan ng mga bagay, kailan pa man ay di maaaring magpasakdal sa mga nagsisilapit sa pamamagitan ng mga hain na laging inihahandog...` },
+        { vid: "259", ref: "Hebreo 9:13-14", text: `Sapagka't kung ang dugo ng mga kambing at ng mga baka, at ang abo ng dumalagang baka na ibinubudbod sa mga nadungisan, ay makapagiging banal sa ikalilinis ng laman: Gaano pa kaya ang dugo ni Cristo...` },
+        { vid: "260", ref: "Levitico 17:12-13", text: `Kaya't aking sinabi sa mga anak ni Israel, Sinoman sa inyo ay huwag kakain ng dugo, ni ang taga ibang bayan na nakikipamayan sa inyo ay huwag kakain ng dugo...` },
+        { vid: "261", ref: "Levitico 17:10 MB", text: `Ang sinumang kumain ng dugo ay magiging kalaban ko at ititiwalag sa kapulungan, maging Israelita o dayuhan man.` },
+        { vid: "262", ref: "II Corinto 6:14-15", text: `Huwag kayong makipamatok ng kabilan sa mga di nagsisisampalataya: sapagka't anong pakikisama mayroon ang katuwiran at kalikuan? o anong pakikisama mayroon ang kaliwanagan sa kadiliman?` },
+        { vid: "262a", ref: "II Corinto 6:14-15 Lamsa", text: `Do not unite in marriage with unbelievers, for what fellowship has righteousness with iniquity? Or what mingling has light with darkness? Or what accord has Christ with Satan?...` },
+        { vid: "263", ref: "Deuteronomio 7:2-4", text: `At pagka sila'y, ibibigay sa harap mo ng Panginoon mong Dios, at iyong sasaktan sila; ay lubos mo ngang lilipulin sila; huwag kang makikipagtipan sa kanila... Ni magaasawa sa kanila...` },
+        { vid: "264", ref: "Nehemias 13:26-27", text: `Hindi ba nagkasala si Salomon na hari sa Israel sa pamamagitan ng mga bagay na ito? gayon man sa gitna ng maraming bansa ay walang haring gaya niya... gayon ma'y pinapagkasala rin siya ng mga babaing taga ibang lupa.` },
+        { vid: "265", ref: "I Juan 2:15", text: `Huwag ninyong ibigin ang sanglibutan, ni ang mga bagay na nasa sanglibutan. Kung ang sinoman ay umiibig sa sanglibutan, ay wala sa kaniya ang pagibig ng Ama.` },
+        { vid: "266", ref: "Mateo 15:4", text: `Sapagka't sinabi ng Dios, Igalang mo ang iyong ama at ang iyong ina: at, Ang manungayaw sa ama at sa ina, ay mamatay siyang walang pagsala.` },
+        { vid: "267", ref: "Gawa 2:38-39", text: `At sinabi sa kanila ni Pedro, Mangagsisi kayo, at mangagbautismo ang bawa't isa sa inyo sa pangalan ni Jesucristo sa ikapagpapatawad ng inyong mga kasalanan; at tatanggapin ninyo ang kaloob ng Espiritu Santo.` },
+        { vid: "268", ref: "Roma 6:3 - 5 MB", text: `Hindi ba ninyo nalalaman na tayong lahat na nabautismuhan kay Cristo Jesus ay nabautismuhan sa kanyang kamatayan? Samakatwid, tayo'y namatay at nalibing na kasama niya sa pamamagitan ng bautismo...` },
+        { vid: "269", ref: "Juan 3:23 MB", text: `Si Juan ay nagbabautismo rin naman sa Enon, malapit sa Salim, sapagka't maraming tubig doon. Pumupunta sa kanya ang mga tao at nagpapabautismo.` },
+        { vid: "270", ref: "Gawa 8:38", text: `At ipinagutos niyang itigil ang karo: at sila'y kapuwa lumusong sa tubig, si Felipe at ang bating; at kaniyang binautismuhan siya.` },
+        { vid: "271", ref: "Deuteronomio 12:32", text: `Kung anong bagay ang iniuutos ko sa iyo, ay siya mong isasagawa: huwag mong dadagdagan, ni babawasan.` },
+        { vid: "272", ref: "I Juan 3:4", text: `Ang sinomang gumagawa ng kasalanan ay sumasalangsang din naman sa kautusan: at ang kasalanan ay ang pagsalangsang sa kautusan.` },
+        { vid: "273", ref: "Mateo 19:13-14", text: `Nang magkagayon ay dinala sa kaniya ang maliliit na bata, upang ipatong niya ang kaniyang mga kamay sa kanila, at ipanalangin: at sinaway sila ng mga alagad. Datapuwa't sinabi ni Jesus, Pabayaan ninyo ang maliliit na bata...` },
+        { vid: "274", ref: "Roma 6:6 at 11 MB", text: `Alam natin na ang dati nating pagkatao ay ipinakong kasama niya upang mamatay ang makasalanang katawan at nang hindi na tayo maalipin pa ng kasalanan.` },
+        { vid: "275", ref: "* Efeso 4:12", text: `Sa ikasasakdal ng mga banal, sa gawaing paglilingkod sa ikatitibay ng katawan ni Cristo:` },
+        { vid: "276", ref: "Galacia 3:27", text: `Sapagka't ang lahat na sa inyo ay binautismuhan kay Cristo ay ibinihis si Cristo.` },
+        { vid: "277", ref: "Galacia 2:20", text: `Ako'y napako sa krus na kasama ni Cristo; at hindi na ako ang nabubuhay, kundi si Cristo ang nabubuhay sa akin: at ang buhay na ikinabubuhay ko ngayon sa laman ay ikinabubuhay ko sa pananampalataya...` },
+        { vid: "278", ref: "Mateo 5:13-14", text: `Kayo ang asin ng lupa: nguni't kung ang asin ay tumabang, ay ano ang ipagpapaalat? wala nang ano pa mang kabuluhan, kundi upang itapon sa labas at yurakan ng mga tao. Kayo ang ilaw ng sanglibutan.` },
+        { vid: "279", ref: "Mateo 5:15-16", text: `Hindi rin nga pinaniningasan ang isang ilawan, at inilalagay sa ilalim ng isang takalan, kundi sa talagang lalagyan ng ilaw; at lumiliwanag sa lahat ng nangasa bahay. Lumiwanag na gayon ang inyong ilaw sa harap ng mga tao...` },
+        { vid: "280", ref: "Roma 8:21", text: `Na ang buong nilalang naman ay magiging laya mula sa pagkaalipin ng kabulukan sa kalayaang maluwalhati ng mga anak ng Dios.` },
+        { vid: "281", ref: "Juan 4:28-30", text: `Sa gayo'y iniwan ng babae ang kaniyang banga ng tubig, at napasa bayan, at sinabi sa mga tao, Magsiparito kayo, tingnan ninyo ang isang lalake, na nagsabi sa akin ng lahat ng mga bagay na aking ginawa: mangyayari kayang ito ang Cristo?` },
+        { vid: "282", ref: "Juan 4:39 at 41-42", text: `At marami sa mga Samaritano sa bayang yaon ang sa kaniya'y nagsisampalataya dahil sa salita ng babae, na nagpatotoo, Sinabi niya sa akin ang lahat ng mga bagay na aking ginawa...` },
+        { vid: "283", ref: "Lucas 18:1", text: `At sinalita niya sa kanila ang isang talinghaga, na sila'y dapat magsipanalanging lagi, at huwag manganglupaypay;` },
+        { vid: "284", ref: "Mateo 26:41", text: `Kayo'y mangagpuyat at magsipanalangin, upang huwag kayong magsipasok sa tukso: ang espiritu sa katotohanan ay may ibig, datapuwa't mahina ang laman.` },
+        { vid: "285", ref: "Filipos 4:6", text: `Huwag kayong mangabalisa sa anomang bagay; kundi sa lahat ng mga bagay sa pamamagitan ng panalangin at daing na may pagpapasalamat ay ipakilala ninyo ang inyong mga kahilingan sa Dios.` },
+        { vid: "286", ref: "Santiago 5:14-15", text: `May sakit baga ang sinoman sa inyo? ipatawag niya ang mga matanda sa iglesia; at ipanalangin nila siya, na pahiran nila ng langis sa pangalan ng Panginoon: At ang panalangin ng pananampalataya ay magliligtas sa may sakit...` },
+        { vid: "287", ref: "Awit 55:17", text: `Sa hapon at sa umaga, at sa katanghaliang tapat, ako'y dadaing at hihibik: At kaniyang didinggin ang aking tinig.` },
+        { vid: "288", ref: "I Corinto 10:31", text: `Kaya kung kayo'y nagsisikain man, o nagsisiinom man o anoman ang inyong ginagawa, gawin ninyo ang lahat sa ikaluluwalhati ng Dios.` },
+        { vid: "289", ref: "Gawa 10:2", text: `Isang taong masipag sa kabanalan at matatakutin sa Dios siya at ang buong sangbahayan at naglimos ng marami sa mga tao, at laging nananalangin sa Dios.` },
+        { vid: "290", ref: "Marcos 11:24", text: `Kaya nga sinasabi ko sa inyo, Ang lahat ng mga bagay na inyong idinadalangin at hinihingi, ay magsisampalataya kayo na inyong tinanggap na, at inyong kakamtin.` },
+        { vid: "291", ref: "Santiago 1:6-8", text: `Nguni't humingi siyang may pananampalataya, na walang anomang pagaalinlangan: sapagka't yaong nagaalinlangan ay katulad ng isang alon ng dagat na itinutulak ng hangin at ipinapadpad sa magkabikabila.` },
+        { vid: "292", ref: "I Juan 3:22", text: `At anomang ating hingin ay tinatanggap natin sa kaniya, sapagka't tinutupad natin ang kaniyang mga utos at ginagawa natin ang mga bagay na kalugodlugod sa kaniyang paningin.` },
+        { vid: "293", ref: "Santiago 4:3", text: `Kayo'y nagsisihingi, at hindi kayo nagsisitanggap, sapagka't nagsisihingi kayo ng masama, upang gugulin sa inyong mga kalayawan.` },
+        { vid: "294", ref: "Lucas 17:5", text: `At sinabi ng mga apostol sa Panginoon, Dagdagan mo ang pananampalataya namin.` },
+        { vid: "295", ref: "Mateo 6:7-8", text: `At sa pananalangin ninyo ay huwag ninyong gamitin ang walang kabuluhang paulitulit, na gaya ng ginagawa ng mga Gentil: sapagka't iniisip nilang dahil sa kanilang maraming kasasalita ay didinggin sila.` },
+        { vid: "296", ref: "Hebreo 4:14 at 16", text: `Yaman ngang tayo'y mayroong isang lubhang dakilang saserdote, na pumasok sa kalangitan, si Jesus na Anak ng Dios, ay ingatan nating matibay ang ating pagkakilala... Magsilapit nga tayong may pagkakatiwala sa luklukan ng biyaya...` },
+        { vid: "297", ref: "Mateo 6:11-12 MB", text: `Bigyan mo kami ng pagkaing kailangan namin sa araw na ito; At patawarin mo kami sa aming mga kasalanan, Tulad ng aming pagpapatawad sa mga nagkakasala sa amin.` },
+        { vid: "298", ref: "Juan 15:16", text: `Ako'y hindi ninyo hinirang, nguni't kayo'y hinirang ko, at aking kayong inihalal, upang kayo'y magsiyaon at magsipagbunga, at upang manatili ang inyong bunga: upang ang anomang inyong hingin sa Ama sa aking pangalan, ay maibigay niya sa inyo.` },
+        { vid: "299", ref: "Hebreo 13:17 MB", text: `Pasakop kayo sa mga nangangasiwa sa inyo. Sila'y may pananagutang magbantay sa inyo, at magbibigay-sulit sila sa Diyos ukol dito. Kung sila'y susundin ninyo, magagalak sila sa pagtupad ng kanilang tungkulin.` },
+        { vid: "300", ref: "Colosas 1:25", text: `Na ako'y ginawang ministro nito, ayon sa pamamahala na mula sa Dios na ibinigay sa akin para sa inyo upang maipahayag ang salita ng Dios.` },
+		{ vid: "301", ref: "I Corinto 16:15-16", text: `Ipinamamanhik ko nga sa inyo, mga kapatid (nalalaman ninyo na ang sangbahayan ni Estefanas ay siyang pangunahing bunga ng Acaya, at nangagsitalaga sa paglilingkod sa mga banal), Na kayo'y pasakop naman sa mga gayon, at sa bawa't tumutulong sa gawa at nagpapagal.` },
+        { vid: "302", ref: "Efeso 4:7 at 11-12", text: `Datapuwa't ang bawa't isa sa atin ay binigyan ng biyaya ayon sa sukat na kaloob ni Cristo. At pinagkalooban niya ang mga iba na maging mga apostol; at ang mga iba'y propeta; at ang mga iba'y evangelista; at ang mga iba'y pastor at mga guro; Sa ikasasakdal ng mga banal...` },
+        { vid: "303", ref: "Mateo 18:18", text: `Katotohanang sinasabi ko sa inyo, na ang lahat ng mga bagay na inyong talian sa lupa ay tatalian sa langit: at ang lahat ng mga bagay na inyong kalagan sa lupa ay kakalagan sa langit.` },
+        { vid: "304", ref: "Kawikaan 3:3 at 1", text: `Huwag kang pabayaan ng kaawaan at katotohanan: Itali mo sa palibot ng iyong leeg; Ikintal mo sa iyong puso: Anak ko, huwag mong kalimutan ang aking kautusan; Kundi ingatan ng iyong puso ang aking mga utos:` },
+        { vid: "305", ref: "Gawa 16:4", text: `At sa kanilang pagtahak sa mga bayan, ay ibinigay sa kanila ang mga utos na inilagda ng mga apostol at ng mga matanda sa Jerusalem, upang kanilang tuparin.` },
+        { vid: "306", ref: "Daniel 12:1", text: `At sa panahong yaon ay tatayo si Miguel, na dakilang prinsipe na tumatayo sa ikabubuti ng mga anak ng iyong bayan; at magkakaroon ng panahon ng kabagabagan, na hindi nangyari kailan man mula nang magkaroon ng bansa hanggang sa panahong yaon...` },
+        { vid: "307", ref: "* Apocalipsis 20:12", text: `At nakita ko ang mga patay, malalaki at maliliit, na nangakatayo sa harapan ng luklukan; at nangabuksan ang mga aklat: at nabuksan ang ibang aklat, na siyang aklat ng buhay: at ang mga patay ay hinatulan ayon sa mga bagay na nasusulat sa mga aklat...` },
+        { vid: "308", ref: "I Timoteo 1:19-20", text: `Na ingatan mo ang pananampalataya at ang mabuting budhi; na nang ito'y itakuwil ng iba sa kanila ay nangabagbag tungkol sa pananampalataya: Na sa mga ito'y si Himeneo at si Alejandro; na sila'y aking ibinigay kay Satanas, upang sila'y maturuang huwag mamusong.` },
+        { vid: "309", ref: "Juan 15:5-7", text: `Ako ang puno ng ubas, kayo ang mga sanga: Ang nananatili sa akin, at ako'y sa kaniya, ay siyang nagbubunga ng marami: sapagka't kung kayo'y hiwalay sa akin ay wala kayong magagawa. Kung sinoman ay hindi manatili sa akin, ay siya'y matatapong katulad ng sanga...` },
+        { vid: "310", ref: "Juan 15:8-10", text: `Sa ganito'y lumuluwalhati ang aking Ama, na kayo'y magsipagbunga ng marami; at gayon kayo'y magiging aking mga alagad. Kung paanong inibig ako ng Ama, ay gayon din naman iniibig ko kayo...` },
+        { vid: "311", ref: "Mateo 24:13", text: `Datapuwa't ang magtitiis hanggang sa wakas ay siyang maliligtas.` },
+        { vid: "312", ref: "Awit 133:1 at 3", text: `Masdan ninyo, na pagkabuti at pagkaligaya Sa mga magkakapatid na magsitahang magkakasama sa pagkakaisa! Gaya ng hamog sa Hermon, na tumutulo sa mga bundok ng Sion: sapagka't doon pinarating ng Panginoon ang pagpapala...` },
+        { vid: "313", ref: "* Juan 17:9 at 11", text: `Idinadalangin ko sila: hindi ang sanglibutan ang idinadalangin ko, kundi yaong mga sa akin ay ibinigay mo; sapagka't sila'y iyo: At wala na ako sa sanglibutan, at ang mga ito ay nasa sanglibutan, at ako'y paririyan sa iyo...` },
+        { vid: "314", ref: "Juan 17:21 at 23", text: `Upang silang lahat ay maging isa; na gaya mo, Ama, sa akin, at ako'y sa iyo, na sila nama'y sumaatin: upang ang sanglibutan ay sumampalataya na ako'y sinugo mo.` },
+        { vid: "315", ref: "I Corinto 1:10", text: `Ngayo'y ipinamamanhik ko sa inyo, mga kapatid, sa pamamagitan ng pangalan ng ating Panginoong Jesucristo, na kayong lahat ay mangagsalita ng isa lamang bagay, at huwag mangagkaroon sa inyo ng mga pagkakabahabahagi;` },
+        { vid: "315a", ref: "I Corinto 1:10 Goodspeed", text: `"Subalit ipinamamanhik ko sa inyong lahat, mga kapatid, na alang-alang sa ating Panginoong Jesucristo ay mangagkaisa kayong lahat sa inyong sinasalita, at huwag ninyong itulot na magkaroon ng mga pagkakabaha-bahagi sa gitna ninyo..."` },
+        { vid: "316", ref: "I Corinto 12:18 at 25", text: `Datapuwa't ngayo'y inilagay ng Dios ang bawa't isa sa mga sangkap ng katawan, ayon sa kaniyang minagaling. Upang huwag magkaroon ng pagkakabahabahagi sa katawan; kundi ang mga sangkap ay mangagkaroon ng magkasing-isang pagiingat sa isa't isa.` },
+        { vid: "317", ref: "I Corinto 3:3-4", text: `Sapagka't kayo'y mga sa laman pa: sapagka't samantalang sa inyo'y may mga paninibugho at mga pagtatalo, hindi baga kayo'y mga sa laman, at kayo'y nagsisilakad ayon sa kaugalian ng mga tao?` },
+        { vid: "318", ref: "Roma 8:9", text: `Datapuwa't kayo'y wala sa laman kundi nasa sa Espiritu, kung gayo'y tumitira sa inyo ang Espiritu ng Dios. Datapuwa't kung ang sinoma'y walang Espiritu ni Cristo, siya'y hindi sa kaniya.` },
+        { vid: "319", ref: "Santiago 3:14-15", text: `Nguni't kung kayo'y mayroong mapapait na paninibugho at pagkakampikampi sa inyong puso, ay huwag ninyong ipagmapuri at huwag magsinungaling laban sa katotohanan.` },
+        { vid: "320", ref: "II Corinto 13:11", text: `Sa katapustapusan, mga kapatid, paalam na. Mangagpakasakdal kayo; mangaaliw kayo; mangagkaisa kayo ng pagiisip; mangabuhay kayo sa kapayapaan: at ang Dios ng pagibig at ng kapayapaan ay sasa inyo.` },
+        { vid: "321", ref: "Efeso 4:4-6", text: `May isang katawan, at isang Espiritu, gaya naman ng pagkatawag sa inyo sa isang pagasa ng pagtawag sa inyo; Isang Panginoon, isang pananampalataya, isang bautismo...` },
+        { vid: "322", ref: "Filipos 2:2-3", text: `Ay lubusin ninyo ang aking katuwaan, upang kayo'y mangagkaisa ng pagiisip, mangagtaglay ng isa ring pagibig, na mangagkaisa ng akala, at isa lamang pagiisip; Na huwag ninyong gawin ang anoman sa pamamagitan ng pagkakampikampi o sa pamamagitan ng pagpapalalo...` },
+        { vid: "323", ref: "Gawa 15:12-13", text: `Ito ang aking utos, na kayo'y mangagibigan sa isa't isa, na gaya ng pagibig ko sa inyo. Walang may lalong dakilang pagibig kay sa rito, na ibigay ng isang tao ang kaniyang buhay dahil sa kaniyang mga kaibigan.` },
+        { vid: "324", ref: "Gawa 15:19-20", text: `Kung kayo'y taga sanglibutan, ay iibigin ng sanglibutan ang kaniyang sarili: nguni't sapagka't kayo'y hindi taga sanglibutan, kundi kayo'y hinirang ko sa sanglibutan, kaya napopoot sa inyo ang sanglibutan.` },
+        { vid: "325", ref: "Gawa 15:28", text: `Sapagka't minagaling ng Espiritu Santo, at namin, na huwag kayong atangan ng lalong mabigat na pasanin maliban sa mga bagay na ito na kinakailangan:` },
+        { vid: "326", ref: "Gawa 15:1-2", text: `At may ibang mga taong nagsilusong mula sa Judea ay nagsipagturo sa mga kapatid, na sinasabi, Maliban na kayo'y mangagtuli ayon sa kaugalian ni Moises, ay hindi kayo mangaliligtas.` },
+        { vid: "327", ref: "Gawa 15:30-31 MB", text: `Pinayaon ang mga sugo. Pagdating sa Antioquia, tinipon nila ang mga kapatid at ibinigay ang sulat. Pagkabasa sa liham, ang mga tao'y nagalak dahil sa kanilang narinig.` },
+        { vid: "328", ref: "Gawa 17:31", text: `Sapagka't siya'y nagtakda ng isang araw na kaniyang ipaghuhukom sa sanglibutan ayon sa katuwiran sa pamamagitan ng lalaking kaniyang itinalaga; na ito'y pinatunayan niya sa lahat ng mga tao, nang siya'y buhayin niyang maguli sa mga patay.` },
+        { vid: "329", ref: "Hebreo 9:27", text: `At kung paanong itinakda sa mga tao ang mamatay na minsan, at pagkatapos nito ay ang paghuhukom;` },
+        { vid: "330", ref: "Judas 1:14-15", text: `At ang mga ito naman ang hinulaan ni Enoc, na ikapito sa bilang mula kay Adam, na nagsabi, Narito, dumating ang Panginoon, na kasama ang kaniyang mga laksalaksang banal, Upang isagawa ang paghuhukom sa lahat...` },
+        { vid: "331", ref: "Roma 8:1", text: `Ngayon nga'y wala nang anomang hatol sa mga na kay Cristo Jesus.` },
+        { vid: "332", ref: "I Tesalonica 4:16-17", text: `Sapagka't ang Panginoon din ang bababang mula sa langit, na may isang sigaw, may tinig ng arkanghel, at may pakakak ng Dios: at ang nangamatay kay Cristo ay unang mangabubuhay na maguli;` },
+        { vid: "333", ref: "Apocalipsis 20:5-10", text: `Ang mga iba sa mga patay ay hindi nangabuhay hanggang sa naganap ang isang libong taon. Ito ang unang pagkabuhay na maguli. Mapalad at banal ang makalakip sa unang pagkabuhay na maguli...` },
+        { vid: "334", ref: "Apocalipsis 21:1-4", text: `At nakita ko ang isang bagong langit at ang isang bagong lupa: sapagka't ang unang langit at ang unang lupa ay naparam; at ang dagat ay wala na.` },
+        { vid: "335", ref: "Mateo 24:44", text: `Kaya nga kayo'y magsihanda naman; sapagka't paririto ang Anak ng tao sa oras na hindi ninyo iniisip.` },
+        { vid: "336", ref: "Mateo 24:36", text: `Nguni't tungkol sa araw at oras na yaon walang makakaalam, kahit ang mga anghel sa langit, kahit ang Anak, kundi ang Ama lamang.` },
+        { vid: "337", ref: "II Pedro 3:14", text: `Kaya nga, mga minamahal, yamang kayo'y nagsisipaghintay ng mga bagay na ito, ay pagsikapan ninyong masumpungan kayo sa kapayapaan, na walang dungis at walang kapintasan sa paningin niya.` },
+        { vid: "338", ref: "Colosas 3:15", text: `At maghari sa inyong puso ang kapayapaan ni Cristo, na diya'y tinawag din naman kayo sa isang katawan; at kayo'y maging mapagpasalamat.` },
+        { vid: "339", ref: "I Pedro 1:6-7 MB", text: `Ito'y dapat ninyong ikagalak, bagamat maaaring magdanas muna kayo ng iba't ibang pagsubok sa loob maikling panahon. Ang ginto, na nasisira, ay pinararaan sa apoy upang malaman kung talagang dalisay.` },
+        { vid: "340", ref: "Marcos 4:14-20 MB", text: `Ang inihahasik ay ang Salita ng Diyos. Ito ang mga nasa daan, na nahasikan ng Salita: pagkatapos nilang mapakinggan ito, pagdaka'y dumarating si Satanas, at inaalis ang Salitang napahasik sa kanilang puso.` },
+        { vid: "341", ref: "Filipos 1:11", text: `Na mangapuspos ng bunga ng kabanalan, na ito'y sa pamamagitan ni Jesucristo, sa ikaluluwalhati at ikapupuri ng Dios.` },
+        { vid: "342", ref: "* I Pedro 1:18-19", text: `Na inyong nalalamang kayo'y tinubos hindi ng mga bagay na nangasisira, ng pilak o ginto, mula sa inyong walang kabuluhang paraan ng pamumuhay, na ipinamana sa inyo ng inyong mga magulang; Kundi ng mahalagang dugo...` },
+        { vid: "343", ref: "Hebreo 10:23 MB", text: `Magpakatatag tayo sa ating pag-asa at huwag mag-alinlangan, sapagkat tapat ang nangako sa atin.` },
+        { vid: "344", ref: "* Awit 27: 1 at 4-5 MB", text: `Tanglaw ko'y si Yahweh, aking kaligtasan Kaya walang takot ako kaninuman, Sa panganib kanyang iingatan, Kaya naman ako'y walang agam-agam.` },
+        { vid: "345", ref: "Hebreo 10:38-39", text: `Nguni't ang aking lingkod na matuwid ay mabubuhay sa pananampalataya: At kung siya ay umurong, ay hindi kalulugdan ng aking kaluluwa.` },
+        { vid: "346", ref: "Apocalipsis 14:12-13 MB", text: `Kaya't kailangang magpakatatag ang mga hinirang ng Diyos, ang mga sumusunod sa utos ng Diyos at nananatili sa pananalig kay Jesus. At narinig ko ang isang tinig mula sa langit na nagsasabi, "Isulat mo ito: Mula ngayon, mapapalad ang naglilingkod sa Panginoon hanggang kamatayan!"` },
+        { vid: "347", ref: "* Bilang 23:19", text: `Ang Dios ay hindi tao na magsisinungaling, Ni anak ng tao na magsisisi; Sinabi ba niya, at hindi niya gagawin? O sinalita ba niya, at hindi niya isasagawa?` },
+        { vid: "348", ref: "* Galacia 3:16 at 29", text: `Ngayon kay Abraham nga sinabi ang mga pangako, at sa kaniyang binhi. Hindi sinasabi ng Dios, At sa mga binhi, na gaya baga sa marami; kundi gaya sa iisa lamang, At sa iyong binhi, na si Cristo.` },
+        { vid: "349", ref: "*I Juan 3:20", text: `Sapagka't kung hinahatulan tayo ng ating puso, ang Dios ay lalong dakila kay sa ating puso, at nalalaman niya ang lahat ng mga bagay.` },
+        { vid: "350", ref: "* Efeso 5:23 at 25", text: `Sapagka't ang lalake ay pangulo ng kaniyang asawa, gaya naman ni Cristo na pangulo ng iglesia, na siya rin ang tagapagligtas ng katawan. Mga lalake, ibigin ninyo ang inyo-inyong asawa, gaya naman ni Cristo na umibig sa iglesia...` },
+		{ vid: "351", ref: "* Genesis 35:11", text: `At sinabi sa kaniya ng Dios, Ako ang Dios na Makapangyarihan sa lahat; ikaw ay lumago at dumami ka; isang bansa at isang kapisanan ng mga bansa ang magmumula sa iyo, at mga hari ay lalabas sa iyong balakang;` },
+        { vid: "352", ref: "* Zefanias 1:14 at 18", text: `Ang dakilang kaarawan ng Panginoon ay malapit na, malapit na at nagmamadaling mainam, sa makatuwid baga'y ang tinig ng kaarawan ng Panginoon; ang makapangyarihang tao ay sumisigaw roon ng kalagimlagim. Kahit ang kanilang pilak o ang kanilang ginto man ay hindi makapagliligtas sa kanila sa kaarawan ng kapootan ng Panginoon...` },
+        { vid: "353", ref: "* Isaias 60:21", text: `Ang iyong bayan naman ay magiging matuwid na lahat; sila'y mangagmamana ng lupain magpakailan man, ang sanga ng aking pananim, ang gawa ng aking mga kamay, upang ako'y luwalhatiin.` },
+        { vid: "354", ref: "* Isaias 62:11-12", text: `Narito, ang Panginoon ay nagtanyag hanggang sa wakas ng lupa, Inyong sabihin sa anak na babae ng Sion, Narito, ang iyong kaligtasan ay dumarating; narito, ang kaniyang kagantihan ay nasa kaniya, at ang kaniyang ganti ay nasa harap niya. At tatawagin nila sila Ang banal na bayan...` },
+        { vid: "355", ref: "* II Samuel 7:28", text: `At ngayon, Oh Panginoong Dios, ikaw ay Dios at ang iyong mga salita ay katotohanan, at iyong ipinangako ang mabuting bagay na ito sa iyong lingkod:` },
+        { vid: "356", ref: "* Exodo 20:7", text: `Huwag mong babanggitin ang pangalan ng Panginoon mong Dios sa walang kabuluhan; sapagka't hindi aariin ng Panginoong walang sala ang bumanggit ng kaniyang pangalan sa walang kabuluhan.` },
+        { vid: "357", ref: "* Ezekiel 34:31", text: `At kayong mga tupa ko, na mga tupa sa aking pastulan ay mga tao, at ako'y inyong Dios, sabi ng Panginoong Dios.` },
+        { vid: "358", ref: "* Juan 10:30", text: `Ako at ang Ama ay iisa.` },
+        { vid: "359", ref: "* Juan 14:6", text: `Sinabi sa kaniya ni Jesus, Ako ang daan, at ang katotohanan, at ang buhay: sinoman ay di makaparoroon sa Ama, kundi sa pamamagitan ko.` },
+        { vid: "360", ref: "* Roma 9:6-8", text: `Datapuwa't hindi sa ang salita ng Dios ay nauwi sa wala. Sapagka't hindi ang lahat ng buhat sa Israel ay mga taga Israel: Ni sapagka't sila'y binhi ni Abraham, ay mga anak na silang lahat: kundi, Kay Isaac tatawagin ang iyong binhi...` },
+        { vid: "361", ref: "* Juan 8:44", text: `Kayo'y sa inyong amang diablo, at ang mga nais ng inyong ama ang ibig ninyong gawin. Siya'y isang mamamatay-tao buhat pa nang una, at hindi nananatili sa katotohanan, sapagka't walang katotohanan sa kaniya...` },
+        { vid: "362", ref: "* I Corinto 13:13", text: `Datapuwa't ngayo'y nanatili ang tatlong ito: ang pananampalataya, ang pagasa, at ang pagibig; nguni't ang pinakadakila sa mga ito ay ang pagibig.` },
+        { vid: "363", ref: "* I Corinto 12:13", text: `Sapagka't sa isang Espiritu ay binabautismuhan tayong lahat sa isang katawan, maging tayo'y Judio o Griego, maging mga alipin o mga laya; at tayong lahat ay pinainom sa isang Espiritu.` },
+        { vid: "364", ref: "* Hebreo 1:6", text: `At muli nang dinadala niya ang panganay sa sangkalupaan ay sinasabi, At sambahin siya ng lahat ng mga anghel ng Dios.` },
+        { vid: "365", ref: "* Juan 1:12-13", text: `Datapuwa't ang lahat ng sa kaniya'y nagsitanggap, ay pinagkalooban niya sila ng karapatang maging mga anak ng Dios, sa makatuwid baga'y ang mga nagsisisampalataya sa kaniyang pangalan: Na mga ipinanganak na hindi sa dugo...` },
+        { vid: "366", ref: "* Deuteronomio 7:6-7", text: `Sapagka't ikaw ay isang banal na bayan sa Panginoon mong Dios; pinili ka ng Panginoon mong Dios upang maging bayan sa kaniyang sariling pag-aari, na higit sa lahat ng mga bayan na nasa ibabaw ng balat ng lupa...` },
+        { vid: "367", ref: "* Deuteronomio 32:39 NPV", text: `Tingnan ninyo, ako nga ay Siya. Ako lamang ang Diyos at wala nang iba. Ako ang pumapatay at muling bumubuhay. Pinagagaling ko ang aking sinugatan. Anumang gawin ko'y walang makahahadlang.` },
+        { vid: "368", ref: "* Amos 5:27", text: `Kaya't kayo'y aking papapasukin sa pagkabihag sa dako roon ng Damasco, sabi ng Panginoon, na ang pangala'y Dios ng mga hukbo.` },
+        { vid: "369", ref: "* Oseas 2:11", text: `Akin din namang papaglilikatin ang kaniyang mga kalayawan, ang kaniyang mga kapistahan, ang kaniyang mga bagong buwan, at ang kaniyang mga sabbath, at lahat ng kaniyang takdang kapulungan.` },
+        { vid: "370", ref: "* Bilang 6:3", text: `Ay hihiwalay siya sa alak at sa matapang na inumin; siya'y hindi iinom ng suka ng alak, o tubang nakalalasing, ni iinom man ng anomang katas na galing sa ubas o kakain man ng sariwang ubas o pasas.` },
+        { vid: "370a", ref: "Bilang 6:3 TEV", text: `shall abstain from wine and beer. You shall not drink any kind of drink made from grapes or eat any grapes or raisins.` },
+        { vid: "371", ref: "* I Corinto 15:58", text: `Kaya nga, mga kapatid kong minamahal, kayo'y magsitatag, huwag makilos, na laging sumasagana sa gawa ng Panginoon, yamang nalalaman ninyo na hindi walang kabuluhan ang inyong gawa sa Panginoon.` },
+        { vid: "372", ref: "* Isaias 40:3", text: `Ang tinig ng isang sumisigaw, lhanda ninyo sa ilang ang daan ng Panginoon pantayin ninyo sa ilang ang lansangan para sa ating Dios.` },
+        { vid: "373", ref: "* Isaias 49:6", text: `Oo, kaniyang sinasabi, Totoong magaan ang bagay na ikaw ay naging aking lingkod upang ibangon ang mga lipi ng Jacob, at isauli ang iningatan ng Israel, ikaw ay aking ibibigay na pinakailaw sa mga Gentil upang ikaw ay maging aking kaligtasan hanggang sa wakas ng lupa.` },
+        { vid: "374", ref: "* Isaias 61:1-2", text: `Ang Espiritu ng Panginoong Dios ay sumasa akin; sapagka't pinahiran ako ng Panginoon upang ipangaral ang mabubuting balita sa mga maamo; kaniyang sinugo ako upang magpagaling ng mga bagbag na puso...` },
+        { vid: "375", ref: "* Colosas 3:1", text: `Kung kayo nga'y muling binuhay na kalakip ni Cristo, ay hanapin ninyo ang mga bagay na nangasa itaas, na kinaroroonan ni Cristo, na nakaupo sa kanan ng Dios.` },
+        { vid: "376", ref: "* Daniel 9:11", text: `Oo, buong Israel ay sumalangsang ng iyong kautusan, sa pagtalikod, upang huwag nilang talimahin ang iyong tinig: kaya't ang sumpa ay nabuhos sa amin, at ang sumpa na nakasulat sa kautusan ni Moises...` },
+        { vid: "377", ref: "* Apocalipsis 14:1", text: `At tumingin ako, at narito, ang Cordero ay nakatayo sa bundok ng Sion, at ang kasama niya'y isang daan at apat na pu't apat na libong may pangalan niya, at pangalan ng kaniyang Ama, na nasusulat sa kanikaniyang noo.` },
+        { vid: "378", ref: "* Apocalipsis 14:6-7", text: `At nakita ko ang ibang anghel na lumilipad sa gitna ng langit, na may mabuting balita na walang hanggan upang ibalita sa mga nananahan sa lupa, at sa bawa't bansa at angkan at wika at bayan; At sinasabi niya ng malakas na tinig, Matakot kayo sa Dios...` },
+        { vid: "379", ref: "* Apocalipsis 14:8", text: `At ang iba, ang pangalawang anghel, ay sumunod na nagsasabi, Naguho, naguho ang dakilang Babilonia, na siyang nagpainom sa lahat na bansa ng alak ng kagalitan ng kaniyang pakikiapid.` },
+        { vid: "380", ref: "* Apocalipsis 14:9-11", text: `At ang ibang anghel, ang pangatlo, ay sumunod sa kanila, na nagsasabi ng malakas na tinig, Kung ang sinoman ay sumasamba sa hayop at sa kaniyang larawan, at tumatanggap ng tanda sa kaniyang noo, o sa kaniyang kamay, Ay iinom din naman siya ng alak ng kagalitan ng Dios...` },
+        { vid: "381", ref: "* I Hari 8:39", text: `Dinggin mo nga sa langit na iyong tahanang dako, at ikaw ay magpatawad at gumawa, at gumanti ka sa bawa't tao ayon sa lahat niyang mga lakad na ang puso ay iyong natataho; (sapagka't ikaw, ikaw lamang ang nakakataho ng mga puso ng lahat ng mga anak ng mga tao;)` },
+        { vid: "382", ref: "* Tito 2:13", text: `Na hintayin yaong mapalad na pagasa at ang pagpapakita ng kaluwalhatian ng ating dakilang Dios at Tagapagligtas na si Jesucristo;` },
+        { vid: "383", ref: "* Isaias 46:9-10", text: `Inyong alalahanin ang mga dating bagay ng una: sapagka't ako'y Dios, at walang iba liban sa akin; ako'y Dios, at walang gaya ko; Na nagpapahayag ng wakas mula sa pasimula, at mula nang mga unang panahon, ng mga bagay na hindi pa nangyayari...` },
+        { vid: "384", ref: "* Mikas 5:3", text: `Kaya't kaniyang ibibigay sila hanggang sa panahon na siya na nagdaramdam ay manganak: kung magkagayon ang nalabi sa kaniyang mga kapatid ay babalik sa mga anak ni Israel.` },
+        { vid: "385", ref: "* Zacarias 13:7-9", text: `Gumising ka, Oh tabak, laban sa pastor ko, at laban sa lalake na aking kasama, sabi ng Panginoon ng mga hukbo: saktan mo ang pastor at ang mga tupa ay mangangalat; at aking ipipihit ang aking kamay laban sa mga maliit... Sila'y magsisitawag sa aking pangalan, at akin silang didinggin...` },
+        { vid: "386", ref: "* Malakias 2:7 at 10", text: `Sapagka't ang mga labi ng saserdote ay dapat mangagingat ng kaalaman, at kanilang marapat hanapin ang kautusan sa kaniyang bibig; sapagka't siya ang sugo ng Panginoon ng mga hukbo. Wala baga tayong lahat na isang ama?` },
+        { vid: "387", ref: "* Malakias 2:16 NPV", text: `"Namumuhi ako sa diborsyo ng mag-asawa," sabi ng PANGINOONG Diyos ng Israel, "at namumuhi ako sa taong binabalot ng karahasan ang sarili na parang nagbabalot ng kasuotan," sabi ng PANGINOON na Makapangyarihan sa lahat.` },
+        { vid: "388", ref: "* Levitico 26:19", text: `At sisirain ko ang kahambugan ng inyong kapangyarihan; at gagawin kong parang bakal ang inyong langit at parang tanso ang inyong lupa:` },
+        { vid: "389", ref: "* Lucas 3:3-4", text: `At siya'y napasa buong lupain sa palibotlibot ng Jordan, na ipinangangaral ang bautismo ng pagsisisi sa ikapagpapatawad ng mga kasalanan; Gaya ng nasusulat sa aklat ng salita ng propeta Isaias...` },
+        { vid: "390", ref: "* I Tesalonica 2:14 BSP", text: `Tinularan nga ninyo, mga kapatid, ang mga iglesya ng Diyos sa Judea, ang mga iglesya ni Kristo Jesus. Dumanas kayo ng hirap mula sa inyong mga kalahi tulad ng kanilang dinanas mula sa mga Judio.` },
+        { vid: "391", ref: "* Ezekiel 22:27", text: `Ang mga prinsipe sa gitna niyaon ay parang mga lobo na nangangagaw ng huli, upang mangagbubo ng dugo, at upang magpahamak ng mga tao, upang sila'y mangagkaroon ng mahalay na pakinabang.` },
+        { vid: "392", ref: "* Colosas 2:9 at 16", text: `Sapagka't sa kaniya'y nananahan ang buong kapuspusan ng pagka Dios sa kahayagan ayon sa laman, Sinoman nga ay huwag humatol sa inyo tungkol sa pagkain, o sa paginom, o tungkol sa kapistahan...` },
+        { vid: "393", ref: "* Apocalipsis 2:1", text: `Sa anghel ng iglesia sa Efeso ay isulat mo: Ang mga bagay na ito ay sinasabi ng may hawak ng pitong bituin sa kaniyang kanang kamay, na yaong lumalakad sa gitna ng pitong kandelerong ginto:` },
+        { vid: "394", ref: "* Josue 24:15", text: `At kung inaakala ninyong masama na maglingkod sa Panginoon, ay piliin ninyo sa araw na ito kung sino ang inyong paglilingkuran; kung ang mga dios ng inyong mga magulang... nguni't sa ganang akin at ng aking sangbahayan ay maglilingkod kami sa Panginoon.` },
+        { vid: "395", ref: "* Genesis 3:15", text: `At papagaalitin ko ikaw at ang babae, at ang iyong binhi at ang kaniyang binhi: ito ang dudurog ng iyong ulo, at ikaw ang dudurog ng kaniyang sakong.` },
+        { vid: "396", ref: "* Deuteronomio 29:29", text: `Ang mga bagay na lihim ay nauukol sa Panginoon nating Dios: nguni't ang mga bagay na hayag ay nauukol sa atin at sa ating mga anak magpakailan man, upang ating magawa ang lahat ng mga salita ng kautusang ito.` },
+        { vid: "397", ref: "* Awit 22:6-7", text: `Nguni't ako'y uod at hindi tao; duwahagi sa mga tao, at hinamak ng bayan. Silang lahat na nangakakita sa akin ay tinatawanang mainam ako: inilalawit nila ang labi, iginagalaw nila ang ulo, na sinasabi,` },
+        { vid: "398", ref: "* Malakias 4:5-6", text: `Narito, aking susuguin sa inyo si Elias na propeta bago dumating ang dakila at kakilakilabot na kaarawan ng Panginoon. At kaniyang papagbabaliking-loob ang puso ng mga ama sa mga anak...` },
+        { vid: "399", ref: "* Isaias 34:1-2", text: `Kayo'y magsilapit, kayong mga bansa, upang mangakinig; at dinggin ninyo, ninyong mga bayan: dinggin ng lupa at ng buong narito; ng sanglibutan, at ng lahat na bagay na nagsisilitaw rito. Sapagka't ang Panginoon ay may galit laban sa lahat na bansa...` },
+        { vid: "400", ref: "* Apocalipsis 7:4-8", text: `At narinig ko ang bilang ng mga natatakan, na isang daan at apat na pu't apat na libo, na natatakan, sa bawa't angkan ng mga anak ni Israel: Sa angkan ni Juda ay labingdalawang libo ang tinatakan...` },
+		{ vid: "401", ref: "* I Corinto 15:50-53", text: `Sinasabi ko nga ito, mga kapatid, na ang laman at ang dugo ay hindi makapagmamana ng kaharian ng Dios; ni ang kasiraan ay magmamana ng walang kasiraan. Narito, sinasaysay ko sa inyo ang isang hiwaga: hindi tayong lahat ay mangatutulog, nguni't tayong lahat ay babaguhin...` },
+        { vid: "402", ref: "* Juan 12:49-50", text: `Sapagka't ako'y hindi nagsasalita na mula sa aking sarili; kundi ang Ama na sa akin ay nagsugo, ay siyang nagbigay sa akin ng utos, kung ano ang dapat kong sabihin, at kung ano ang dapat kong salitain. At nalalaman ko na ang kaniyang utos ay buhay na walang hanggan...` },
+        { vid: "403", ref: "* II Juan 1:7", text: `Sapagka't maraming magdaraya na nangagsilitaw sa sanglibutan, sa makatuwid ay ang mga hindi nangagpapahayag na si Jesucristo ay napariritong nasa laman. Ito ang magdaraya at ang anticristo.` },
+        { vid: "404", ref: "Juan 20:25-28", text: `Sinabi nga sa kaniya ng ibang mga alagad, Nakita namin ang Panginoon. Nguni't sinabi niya sa kanila, Malibang aking makita sa kaniyang mga kamay ang butas ng mga pako... Sumagot si Tomas, at sa kaniya'y sinabi, Panginoon ko at Dios ko.` },
+        { vid: "405", ref: "* I Juan 5:7-8", text: `At ang Espiritu ang nagpapatotoo, sapagka't ang Espiritu ay katotohanan. Sapagka't may tatlong nagpapatotoo, ang Espiritu, ang tubig, at ang dugo: at ang tatlo ay nagkakaisa.` },
+        { vid: "406", ref: "* Hebreo 1:8-9", text: `Nguni't tungkol sa Anak ay sinasabi, Ang iyong luklukan, Oh Dios, ay magpakailan man; At ang setro ng katuwiran ay siyang setro ng iyong kaharian. Inibig mo ang katuwiran, at kinapootan mo ang kasamaan...` },
+        { vid: "407", ref: "* Roma 5:15 at 17 MB", text: `Ngunit magkaiba ang dalwang ito, sapagkat ang kagandahangloob -ng Diyos ay higit na di hamak kaysa pagsuway ni Adan. Totoo ngang nagdala ng kamatayan sa marami ang pagsuway ni Adan... sila'y maghahari sa buhay.` },
+        { vid: "408", ref: "* Colosas 1:15-16", text: `Na siya ang larawan ng Dios na di nakikita, ang panganay ng lahat ng mga nilalang; Sapagka't sa kaniya nilalang ang lahat na mga bagay, sa sangkalangitan at sa sangkalupaan, na mga bagay na nakikita at ang mga bagay na di nakikita...` },
+        { vid: "409", ref: "* Hebreo 7:26", text: `Sapagka't nararapat sa atin ang gayong dakilang saserdoteng banal, walang sala, walang dungis, nahihiwalay sa mga makasalanan, at ginawang lalong mataas pa kay sa mga langit;` },
+        { vid: "410", ref: "* Hebreo 10:10 at 12", text: `Sa kaloobang yaon tayo'y pinapaging-banal, sa pamamagitan ng pagkahandog ng katawan ni Cristo na minsan magpakailan man. Nguni't siya, nang makapaghandog ng isa lamang hain patungkol sa mga kasalanan magpakailan man, ay umupo sa kanan ng Dios;` },
+        { vid: "411", ref: "* I Timoteo 3:16", text: `At walang pagtatalo, dakila ang hiwaga ng kabanalan; Yaong nahayag sa laman, Pinapagingbanal sa espiritu, Nakita ng mga anghel, Ipinangaral sa mga bansa, Sinampalatayanan sa sanglibutan, Tinanggap sa itaas sa kaluwalhatian.` },
+        { vid: "412", ref: "* Hebreo 9:28", text: `Ay gayon din naman si Cristo, na inihandog na minsan upang dalhin ang mga kasalanan ng marami, sa ikalawa'y pakikita na hiwalay sa kasalanan, sa ikaliligtas ng mga nagsisipaghintay sa kaniya.` },
+        { vid: "412a", ref: "Hebreo 9:28 Lamsa", text: `So Christ was once offered to bear the sins of many; so that at his second coming he shall appear without our sins for the salvation of those who look for him.` },
+        { vid: "413", ref: "* II Pedro 2:1-3", text: `Nguni't may nagsilitaw din naman sa bayan na mga bulaang propeta, na gaya naman sa inyo'y magkakaroon ng mga bulaang guro, na mangagpapasok sa lihim ng mga makakapahamak na mga hiduwang pananampalataya, na itatatuwa pati ang Panginoon na bumili sa kanila...` },
+        { vid: "414", ref: "* Mateo 13:39", text: `At ang kaaway na naghasik ng mga ito ay ang diablo: at ang pagaani ay ang katapusan ng sanglibutan; at ang mga mangaani ay ang mga anghel.` },
+        { vid: "415", ref: "* Juan 17:9-11 MB", text: `Idinadalangin ko sila; hindi ang sanlibutan kundi ang lahat ng ibinigay mo sa akin, sapagkat sila'y iyo. Ang lahat ng akin ay iyo, at ang lahat ng iyo ay akin... upang sila'y maging isa, kung paanong tayo'y iisa.` },
+        { vid: "416", ref: "* Juan 21:15-17 MB", text: `Pagkakain nila, tinanong ni Jesus si Simon Pedro, "Simon, anak ni Juan, iniibig mo ba ako nang higit kaysa mga ito?" ...Pangatlong ulit na tinanong siya ni Jesus... "Pakanin mo ang aking mga tupa."` },
+        { vid: "417", ref: "* Mateo 10:40 at 42 MB", text: `"Ang tumatanggap sa inyo ay tumatanggap sa akin, at ang tumatanggap sa akin ay tumatanggap sa nagsugo sa akin... At sinumang magbigay ng kahit isang basong tubig na malamig sa isa sa maliliit na ito dahil sa ito'y alagad ko tinitiyak ko sa inyong tatanggap siya ng gantimpala."` },
+        { vid: "418", ref: "* Mateo 24:9-11 NPV", text: `"Sa panahong 'yon, kayo'y usigin at papatayin. Kapopootan kayo ng lahat dahil sa akin. Maraming tatalikod sa kanilang pananampalataya, mapopoot sa isa't isa, at magkakanulo sa isa't isa. Lilitaw ang maraming bulaang propeta at ililigaw ang marami."` },
+        { vid: "419", ref: "* I Corinto 11:2", text: `Kayo'y aking pinupuri nga, na sa lahat ng mga bagay ay naaalaala ninyo ako, at iniingatan ninyong matibay ang mga turo, na gaya ng ibinigay ko sa inyo.` },
+        { vid: "420", ref: "* Hebreo 5:4", text: `At sinoman ay hindi tumatanggap sa kaniyang sarili ng karangalang ito, liban na kung tawagin siya ng Dios, na gaya ni Aaron.` },
+        { vid: "421", ref: "* Galacia 1:11-12", text: `Sapagka't aking ipinatatalastas sa inyo, mga kapatid, tungkol sa evangelio na aking ipinangaral, na ito'y hindi ayon sa tao. Sapagka't hindi ko tinanggap ito sa tao, ni itinuro man sa akin, kundi aking tinanggap sa pamamagitan ng pahayag ni Jesucristo.` },
+        { vid: "422", ref: "* Kawikaan 6:23", text: `Sapagka't ang utos ay tanglaw; at ang kautusan ay liwanag; at ang mga saway na turo ay daan ng buhay:` },
+        { vid: "423", ref: "* Juan 20:28", text: `Sumagot si Tomas, at sa kaniya'y sinabi, Panginoon ko at Dios ko.` },
+        { vid: "424", ref: "* Juan 21:25", text: `At mayroon ding iba't ibang mga bagay na ginawa si Jesus, na kung susulating isa-isa, ay inaakala ko na kahit sa sanglibutan ay hindi magkakasiya ang mga aklat na susulatin.` },
+        { vid: "425", ref: "* Apocalipsis 6:12 at 15", text: `At nakita ko nang buksan niya ang ikaanim na tatak, at nagkaroon ng malakas na lindol; at ang araw ay umitim... At ang mga hari sa lupa... ay nagsipagtago sa mga yungib at sa mga bato sa mga bundok;` },
+        { vid: "426", ref: "* Isaias 14:18", text: `Lahat ng mga hari ng mga bansa, silang lahat, nangatutulog sa kaluwalhatian, bawa't isa'y sa kaniyang sariling bahay.` },
+        { vid: "427", ref: "* Eclesiastes 12:13-14", text: `Ito ang wakas ng bagay; lahat ay narinig: ikaw ay matakot sa Dios, at sundin mo ang kaniyang mga utos; sapagka't ito ang buong katungkulan ng tao. Sapagka't dadalhin ng Dios ang bawa't gawa sa kahatulan...` },
+        { vid: "428", ref: "* Hebreo 12:22-24", text: `Datapuwa't nagsilapit kayo sa bundok ng Sion, at sa bayan ng Dios na buhay, ang Jerusalem sa kalangitan, at sa mga di mabilang na hukbo ng mga anghel... At kay Jesus na tagapamagitan ng bagong tipan...` },
+        { vid: "429", ref: "* Santiago 2:7", text: `Hindi baga nilalapastangan nila yaong marangal na pangalan na sa inyo'y itinatawag?` },
+        { vid: "430", ref: "* Efeso 1:7", text: `Na sa kaniya'y mayroon tayo ng ating katubusan sa pamamagitan ng kaniyang dugo, na kapatawaran ng ating mga kasalanan, ayon sa mga kayamanan ng kaniyang biyaya,` },
+        { vid: "431", ref: "* Awit 4:3", text: `Nguni't talastasin ninyo na ibinukod ng Panginoon sa ganang kaniyang sarili ang banal: didinggin ng Panginoon pagka ako'y tumawag sa kaniya.` },
+        { vid: "432", ref: "* Roma 5:8-9", text: `Datapuwa't ipinagtatagubilin ng Dios ang kaniyang pagibig sa atin, na nang tayo'y mga makasalanan pa, si Cristo ay namatay dahil sa atin. Lubha pa nga ngayong inaaring-ganap sa pamamagitan ng kaniyang dugo...` },
+        { vid: "433", ref: "* Isaias 44:24", text: `Ganito ang sabi ng Panginoon, ng iyong Manunubos, at niyang naganyo sa iyo mula sa bahay-bata, Ako ang Panginoon na gumagawa ng lahat na bagay; na naglaladlad, na magisa ng langit; na naglalatag ng lupa;` },
+        { vid: "434", ref: "* II Cronica 36:15", text: `At ang Panginoon, ang Dios ng kanilang mga magulang, nagsugo sa kanila sa pamamagitan ng kaniyang mga sugo, na bumangong maaga at nagsugo, sapagka't siya'y nagdalang habag sa kaniyang bayan, at sa kaniyang tahanang dako:` },
+        { vid: "435", ref: "* I Pedro 3:20", text: `Na nang unang panahon ay mga suwail, na ang pagpapahinuhod ng Dios, ay nanatili noong mga araw ni Noe, samantalang inihahanda ang daong, na sa loob nito'y kakaunti, sa makatuwid ay walong kaluluwa, ang nangaligtas sa pamamagitan ng tubig:` },
+        { vid: "436", ref: "* Lucas 21:34", text: `Datapuwa't mangagingat kayo sa inyong sarili, baka mangalugmok ang inyong mga puso sa katakawan, at sa kalasingan, at sa mga pagsusumakit ukol sa buhay na ito, at dumating na bigla sa inyo ang araw na yaon na gaya ng silo:` },
+        { vid: "437", ref: "* Santiago 4:4", text: `Kayong mga mangangalunya, hindi baga ninyo nalalaman na ang pakikipagkaibigan sa sanglibutan ay pakikipagaway sa Dios? Sinoman ngang magibig na maging kaibigan ng sanglibutan ay nagiging kaaway ng Dios.` },
+        { vid: "438", ref: "* Deuteronomio 4:48", text: `Mula sa Aroer na nasa hangganan ng libis ng Arnon, hanggang sa bundok ng Sion (na siya ring Hermon),` },
+        { vid: "439", ref: "* Isaias 13:5", text: `Sila'y nangagmumula sa malayong lupain, mula sa kaduluduluhang bahagi ng langit, sa makatuwid baga'y ang Panginoon, at ang mga almas ng kaniyang galit, upang gibain ang buong lupain.` },
+        { vid: "440", ref: "* Isaias 39:3", text: `Nang magkagayo'y dumating si Isaias na propeta sa haring Ezechias, at nagsabi sa kaniya, Anong sinabi ng mga lalaking ito? at saan nanggaling na nagsiparito sila sa iyo? At sinabi ni Ezechias, Sila'y nagsiparito sa akin mula sa malayong lupain, sa Babilonia.` },
+        { vid: "441", ref: "* Joel 3:8", text: `At aking ipagbibili ang inyong mga anak na lalake at babae sa kamay ng mga anak ni Juda, at ipagbibili nila sila sa mga tao sa Seba, sa isang bansang malayo: sapagka't sinalita ng Panginoon.` },
+        { vid: "442", ref: "* Jeremias 31:7-8", text: `Sapagka't ganito ang sabi ng Panginoon, Kayo'y magsiawit ng kasayahan dahil sa Jacob, at magsihiyaw kayo dahil sa puno ng mga bansa... Narito, aking dadalhin sila mula sa lupaing hilagaan, at pipisanin ko sila mula sa mga kahulihulihang bahagi ng lupa...` },
+        { vid: "443", ref: "* Gawa 17:24", text: `Sapagka't sa aking pagdaraan, at sa pagmamasid ng mga bagay na inyong sinasamba, ay nakasumpong din naman ako ng isang dambana na may sulat na ganito, SA ISANG DIOS NA HINDI KILALA. Yaon ngang inyong sinasamba sa hindi pagkakilala, siya ang sa inyo'y ibinabalita ko.` },
+        { vid: "444", ref: "* II Samuel 7:24", text: `At iyong itinatag sa iyong sarili ang iyong bayang Israel upang maging bayan sa iyo magpakailan man; at ikaw, Panginoon, ay naging kanilang Dios.` },
+        { vid: "445", ref: "* Genesis 17:7-8 NPV", text: `Ang tipang gagawin ko sa iyo at sa magiging lahi mo ay walang hanggan, at ako'y magiging Diyos ninyo. Ibibigay ko sa iyo at sa lahing susunod sa iyo ang buong lupain ng Canaan, na ngayon ay tinitirhan ninyo. Magiging inyo ito magpakailanman; at ako'y magiging Diyos nila.'` },
+        { vid: "446", ref: "* Ezekiel 28:14 at 17", text: `Ikaw ang pinahirang kerubin na tumatakip: at itinatag kita, na anopa't ikaw ay nasa ibabaw ng banal na bundok ng Dios... Ang iyong puso ay nagmataas dahil sa iyong kagandahan; iyong ipinahamak ang iyong karunungan dahil sa iyong kaningningan...` },
+        { vid: "447", ref: "* Malakias 3:10 MB", text: `Ibigay ninyo buung-buo ang inyong mga ikapu upang matugunan ang pangangailangan sa aking templo. Subukin ninyong gawin ito, kung hindi ko buksan ang mga durungawan ng langit at ibuhos sa inyo ang masaganang pagpapala.` },
+        { vid: "448", ref: "* II Tesalonica 2:7", text: `Sapagka't ang hiwaga ng kasamaan ay gumagawa na: lamang ay may pumipigil ngayon, hanggang sa alisin ito.` },
+        { vid: "449", ref: "* Gawa 20:29-30", text: `Aking talastas na pagalis ko ay magsisipasok sa inyo ang mga ganid na lobo, na hindi mangagpapatawad sa kawan; At magsisilitaw sa mga kasamahan din ninyo ang mga taong mangagsasalita ng mga bagay na masasama, upang mangagdala ng mga alagad sa kanilang hulihan.` },
+        { vid: "450", ref: "* Hebreo 12:9 MB", text: `Tangi sa riyan - pinarurusahan tayo ng ating mga ama sa laman, at dahil dito'y iginagalang natin sila. Hindi ba lalong nararapat na tayo'y pasakop sa Diyos na ating Ama sa espiritu upang mabuhay tayo?` },
+        { vid: "451", ref: "* II Tesalonica 2:14 NPV", text: `Tinawag kayo ng Diyos sa pamamagitan ng ebanghelyong ipinangaral namin sa inyo upang makahati kayo sa kaluwalhatian ng ating Panginoong Jesu-Cristo.` },
+        { vid: "452", ref: "* Isaias 24:15", text: `Kaya't luwalhatiin ninyo ang Panginoon sa silanganan, sa makatuwid baga'y ang pangalan ng Panginoon, ng Dios ng Israel, sa mga pulo ng dagat.` },
+        { vid: "453", ref: "* I Timoteo 3:15", text: `Nguni't kung ako'y magluwat ng mahabang panahon, ay upang maalaman mo kung paano ang dapat sa mga tao na ugaliin nila sa bahay ng Dios, na siyang iglesia ng Dios na buhay, at haligi at suhay ng katotohanan.` },
+        { vid: "454", ref: "* II Tesalonica 2:9-10", text: `Siya, na ang kaniyang pagparito ay ayon sa paggawa ni Satanas na may buong kapangyarihan at mga tanda at mga kahangahangang kasinungalingan, At may buong daya ng kalikuan sa nangapapahamak; sapagka't hindi nila tinanggap ang pagibig sa katotohanan, upang sila'y mangaligtas.` },
+        { vid: "455", ref: "* Roma 3:28", text: `Kaya nga maipasisiya natin na ang tao ay inaaring-ganap sa pananampalataya na hiwalay sa mga gawa ng kautusan.` },
+        { vid: "456", ref: "* Efeso 2:8-9", text: `Sapagka't sa biyaya kayo'y nangaligtas sa pamamagitan ng pananampalataya; at ito'y hindi sa inyong sarili, ito'y kaloob ng Dios; Hindi sa pamamagitan ng mga gawa, upang ang sinoman ay huwag magmapuri.` },
+        { vid: "457", ref: "* Tito 3:5", text: `Na hindi dahil sa mga gawa sa katuwiran na ginawa nating sarili, kundi ayon sa kaniyang kaawaan ay kaniyang iniligtas tayo, sa pamamagitan ng paghuhugas sa muling kapanganakan at ng pagbabago sa Espiritu Santo,` },
+        { vid: "458", ref: "* Lucas 16:16", text: `Ang kautusan at ang mga propeta ay nanatili hanggang kay Juan: mula noo'y ang evangelio ng kaharian ng Dios ay ipinangangaral, at ang bawa't tao ay pumapasok doon na nagpipilit.` },
+        { vid: "459", ref: "* Genesis 33:20", text: `At siya'y nagtindig doon ng isang dambana, at tinawag niyang El-Elohe-Israel.` },
+        { vid: "460", ref: "* Ezra 1:1", text: `Nang unang taon nga ni Ciro na hari sa Persia, upang ang salita ng Panginoon sa pamamagitan ng bibig ni Jeremias ay maganap, kinilos ng Panginoon ang diwa ni Ciro na hari sa Persia, na siya'y nagtanyag sa kaniyang buong kaharian, at isinulat din naman, na sinasabi,` },
+        { vid: "461", ref: "* Isaias 57:15", text: `Sapagka't ganito ang sabi ng Mataas at Matayog na tumatahan sa walang hanggan, na ang pangalan ay Banal; Ako'y tumatahan sa mataas at banal na dako na kasama rin niya na may pagsisisi at pagpapakumbabang-loob...` },
+        { vid: "462", ref: "* Jeremias 1:6", text: `Nang magkagayo'y sinabi ko, Ah, Panginoong Dios! narito, hindi ako marunong magsalita: sapagka't ako'y bata.` },
+        { vid: "463", ref: "* Obadias 1:4", text: `Bagaman ikaw ay pailanglang sa itaas na parang aguila, at bagaman ang iyong pugad ay malagay sa gitna ng mga bituin, aking ibababa ka mula roon, sabi ng Panginoon.` },
+        { vid: "464", ref: "* Mikas 5:2", text: `Nguni't ikaw, Beth-lehem Ephrata, na maliit upang lumagay sa libolibo ng Juda, mula sa iyo ay lalabas sa akin ang isa na magpupuno sa Israel; na ang pinagbuhatan niya ay mula nang una, mula nang walang hanggan.` },
+        { vid: "465", ref: "* Gawa 13:39", text: `At sa pamamagitan niya ang bawa't nananampalataya ay inaaring ganap sa lahat ng mga bagay, na sa mga ito'y hindi kayo aariing ganap sa pamamagitan ng kautusan ni Moises.` },
+        { vid: "466", ref: "* Exodo 3:14-15", text: `At sinabi ng Dios kay Moises, AKO YAONG AKO NGA... ito ang aking pangalan magpakailan man, at ito ang aking pinakaalaala sa lahat ng mga lahi.` },
+        { vid: "467", ref: "* Deuteronomio 30:19-20", text: `Aking tinatawag ang langit at ang lupa na pinakasaksi laban sa inyo sa araw na ito, na aking ilagay sa harap mo ang buhay at ang kamatayan, ang pagpapala at ang sumpa; kaya't piliin mo ang buhay, upang ikaw ay mabuhay...` },
+        { vid: "468", ref: "* Nahum 2:4", text: `Ang mga karo ay nagsisihagibis sa mga lansangan; nangagkakabanggang isa't isa sa mga daan: ang anyo ng mga yaon ay gaya ng mga sulo; nagsisitakbong parang mga kidlat.` },
+        { vid: "469", ref: "* Exodo 6:3", text: `At ako'y napakita kay Abraham, kay Isaac, at kay Jacob na Dios na Makapangyarihan sa lahat; nguni't sa pamamagitan ng aking pangalang Jehova, noon ay hindi ako napakilala sa kanila.` },
+        { vid: "470", ref: "* Ezekiel 7:2-3", text: `At ikaw, anak ng tao, ganito ang sabi ng Panginoong Dios sa lupain ng Israel, May wakas: ang wakas ay dumating sa apat na sulok ng lupain. Ngayon ang wakas ay sumasaiyo at aking pararatingin ang aking galit sa iyo...` },
+        { vid: "471", ref: "* II Pedro 1:20-21", text: `Na maalaman muna ito, na alin mang hula ng kasulatan ay hindi nagbuhat sa sariling pagpapaliwanag. Sapagka't hindi sa kalooban ng tao dumating ang hula kailanman: kundi ang mga tao ay nagsalita buhat sa Dios, na nangaudyokan ng Espiritu Santo.` },
+        { vid: "472", ref: "* Marcos 10:27", text: `Pagtingin ni Jesus sa kanila'y nagsabi, Hindi maaari ito sa mga tao, datapuwa't hindi gayon sa Dios: sapagka't ang lahat ng mga bagay ay may pangyayari sa Dios.` },
+        { vid: "473", ref: "* Exodo 34:14", text: `Sapagka't hindi ka sasamba sa ibang dios: sapagka't ang Panginoon na ang pangalan ay Mapanibughuin; ay mapanibughuin ngang Dios:` },
+        { vid: "474", ref: "* Deuteronomio 4:13", text: `At kaniyang ipinahayag sa inyo ang kaniyang tipan, na kaniyang iniutos sa inyong ganapin, sa makatuwid baga'y ang sangpung utos; at kaniyang isinulat sa dalawang tapyas na bato.` },
+        { vid: "475", ref: "* Genesis 35:18-19", text: `At nangyari, nang nalalagot ang kaniyang hininga (sapagka't namatay siya), ay kaniyang pinanganlang Benoni: datapuwa't pinanganlan ng kaniyang ama na Benjamin. At namatay si Raquel at inilibing sa daang patungo sa Ephrata (na siyang Bethlehem).` },
+        { vid: "476", ref: "* Ruth 4:7 MB", text: `Ganito ang kaugalian sa Israel: kapag tinubos o binili ang isang ari-arian, hinuhubad ng nagpatubos o nagbili ang kanyang panyapak at ibinibigay sa bumili, bilang katibayan ng kanilang kasunduan.` },
+        { vid: "477", ref: "* Panaghoy 2:6 MB", text: `Pinaguho niya ang tabernakulo nito, gaya ng isang halamanan; Winakasan ni Yahweh ang itinakdang pista at Araw ng Pamamahinga, At itinakwil niya sa matinding poot ang hari at saserdote.` },
+        { vid: "478", ref: "* Jonas 3:10-11 MB", text: `Sinabi ni Yahweh: "Tumubo ang halamang iyon, lumago sa loob ng magdamag, at namatay kinabukasan. Wala kang hirap diyan ngunit nalungkot ka nang iya'y mamatay. Ako pa kaya ang hindi malungkot sa kalagayan ng Ninive? Ito'y isang malaking lunsod..."` },
+        { vid: "479", ref: "* Filemon 1:6", text: `Upang ang pakikipagkaisa ng iyong pananampalataya, ay maging mabisa sa pagkaalam ng bawa't mabuting bagay na nasa iyo, sa kay Cristo.` },
+        { vid: "479a", ref: "Filemon 1:6 NIV", text: `I pray that your partnership with us in the faith may be effective in deepening your understanding of every good thing we share for the sake of Christ.` },
+        { vid: "480", ref: "* III Juan 1:2-3", text: `Minamahal, aking idinadalangin na sa lahat ng mga bagay ay guminhawa ka at bumuti ang iyong katawan, na gaya ng pagginhawa ng iyong kaluluwa. Sapagka't ako'y totoong nagalak nang magsidating ang mga kapatid at mangagpatotoo sa iyong katotohanan...` },
+        { vid: "481", ref: "* Awit 80:17", text: `Mapatong nawa ang iyong kamay sa tao na iyong kinakanan. Sa anak ng tao na iyong pinalakas sa iyong sarili.` },
+        { vid: "482", ref: "* Isaias 43:25", text: `Ako, ako nga ay siyang pumapawi ng iyong mga pagsalangsang alang-alang sa akin; at hindi ko aalalahanin ang iyong mga kasalanan.` },
+        { vid: "483", ref: "* Isaias 40:22", text: `Siya ang nakaupo sa balantok ng lupa, at ang mga nananahan doon ay parang mga balang; siyang naglaladlad ng langit na parang tabing, at inilaladlad na parang tolda upang tahanan;` },
+        { vid: "483a", ref: "Isaias 40:22 BSP", text: `Nakaupo siya sa itaas ng bilog ng mundo, at mula roo'y parang langgam ang mga tao. Inilalatag niyang parang tela ang langit, inilaladlad na parang toldang tirahan;` },
+        { vid: "484", ref: "* Mateo 5:18-19", text: `Sapagka't katotohanang sinasabi ko sa inyo, Hanggang sa mangawala ang langit at ang lupa, ang isang tuldok o isang kudlit, sa anomang paraan ay hindi mawawala sa kautusan, hanggang sa maganap ang lahat ng mga bagay.` },
+        { vid: "485", ref: "* Deuteronomio 18:18-19", text: `Aking palilitawin sa kanila ang isang propeta sa gitna ng kanilang mga kapatid, na gaya mo; at aking ilalagay ang aking mga salita sa bibig niya, at kaniyang sasalitain sa kanila ang lahat ng aking iuutos sa kaniya.` },
+        { vid: "486", ref: "* Mateo 1:23", text: `Narito, ang dalaga'y magdadalang-tao at manganganak ng isang lalake, At ang pangalang itatawag nila sa kaniya ay Emmanuel; na kung liliwanagin, ay sumasa atin ang Dios.` },
+        { vid: "487", ref: "* I Corinto 11:13", text: `Hatulan ninyo sa inyo-inyong sarili: nararapat baga na manalangin ang babae sa Dios nang walang lambong?` },
+        { vid: "488", ref: "* Awit ng mga Awit 8:6 MB", text: `Kaya ako'y mahalin mo, sa bisig mo ay ikulong Okay lakas ng pa-ibig, panibugho man ay gayon. Sinlakas ng kamatayan, tumutupok, parang apoy.` },
+        { vid: "489", ref: "* Isaias 42:5 at 8", text: `Ganito ang sabi ng Dios na Panginoon, na lumikha ng langit, at nagladlad ng mga yaon; siyang naglatag ng lupa at ng nagsisilitaw rito; siyang nagbibigay ng hinga sa bayang nito... Ako ang Panginoon; na siyang aking pangalan...` },
+        { vid: "490", ref: "* Ester 8:8", text: `Sumulat naman kayo sa mga Judio, kung anong maibigan ninyo sa pangalan ng hari, at tatakan ninyo ng singsing ng hari: sapagka't ang sulat na nasusulat sa pangalan ng hari, at natatakan ng singsing ng hari ay walang taong makatitiwali.` },
+        { vid: "491", ref: "* Isaias 64:4 at 8", text: `Sapagka't hindi narinig ng mga tao mula nang una, o naulinigan man ng pakinig, o ang mata ay nakakita man ng Dios liban sa iyo... Nguni't ngayon, Oh Panginoon, ikaw ay aming Ama; kami ang malagkit na putik, at ikaw ay magpapalyok sa amin; at kaming lahat ay gawa ng iyong kamay.` },
+        { vid: "492", ref: "* Juan 1:19-23", text: `At ito ang patotoo ni Juan, nang suguin sa kaniya ng mga Judio mula sa Jerusalem ang mga saserdote at mga Levita upang sa kaniya'y itanong, Sino ka baga? At kaniyang ipinahayag, at hindi ikinaila; at kaniyang ipinahayag, Hindi ako ang Cristo...` },
+        { vid: "493", ref: "* II Cronica 24:20-22 MB", text: `Dahil dito, ang Espiritu ng Diyos ay bumaba kay Zacarias na anak ng Saserdote Joiada. Tumayo siya sa gitna ng mga tao. Sinabi niya, "Ito ang sabi ng Diyos: 'Bakit ninyo nilabag ang mg autos ni Yahweh? Gusto ba ninyong mapahamak?'"` },
+        { vid: "494", ref: "* Jeremias 31:15", text: `Ganito ang sabi ng Panginoon, Isang tinig ay narinig sa Rama, panaghoy, at kalagimlagim na iyak, iniiyakan ni Raquel ang kaniyang mga anak; siya'y tumatangging maaliw dahil sa kaniyang mga anak, sapagka't sila'y wala na.` },
+        { vid: "495", ref: "* I Corinto 2:13-14", text: `Na ang mga bagay na ito ay atin namang sinasalita, hindi sa mga salitang itinuturo ng karunungan ng tao, kundi sa itinuturo ng Espiritu; na iniwawangis natin ang mga bagay na ayon sa espiritu sa mga pananalitang ayon sa espiritu.` },
+        { vid: "496", ref: "* Roma 9:4", text: `Na pawang mga Israelita; na sa kanila ang pagkukupkop, at ang kaluwalhatian, at ang mga tipan, at ang pagbibigay ng kautusan, at ang paglilingkod sa Dios, at ang mga kapangakuan;` },
+        { vid: "497", ref: "* Mateo 23:35", text: `Upang mabubo sa inyo ang lahat na matuwid na dugo na nabuhos sa ibabaw ng lupa, buhat sa dugo ng matuwid na si Abel hanggang sa dugo ni Zacarias na anak ni Baraquias na pinatay ninyo sa pagitan ng santuario at ng dambana.` },
+        { vid: "498", ref: "* Galacia 6:16", text: `At ang lahat na mangagsisilakad ayon sa alituntuning ito, kapayapaan at kaawaan nawa ang sumakanila, at sa Israel ng Dios.` },
+        { vid: "499", ref: "* II Hari 5:15", text: `At siya'y bumalik sa lalake ng Dios, siya at ang buong pulutong niya, at naparoon, at tumayo sa harap niya: at siya'y nagsabi, Narito ngayon, aking talastas na walang Dios sa buong lupa, kundi sa Israel: isinasamo ko ngayon sa iyo na tanggapin mo ang kaloob ng iyong lingkod.` },
+        { vid: "500", ref: "* Amos 4:13", text: `Sapagka't, narito, siyang nagaanyo ng mga bundok, at lumilikha ng hangin, at nagpapahayag sa tao kung ano ang kaniyang pagiisip; na nagpapadilim ng umaga, at yumayapak sa mga mataas na dako ng lupa, ang Panginoon, ang Dios ng mga hukbo ay siya niyang pangalan.` }     
+    ];
+    // ====================================================================
+
+    window.onload = () => {
+        const savedLastName = localStorage.getItem('vid_last_name');
+        const savedFirstName = localStorage.getItem('vid_first_name');
+        if (savedLastName) document.getElementById('lastName').value = savedLastName;
+        if (savedFirstName) document.getElementById('firstName').value = savedFirstName;
+
+        document.getElementById('lastName').addEventListener('keypress', function(e) { if (e.key === 'Enter') startGame(); });
+        document.getElementById('firstName').addEventListener('keypress', function(e) { if (e.key === 'Enter') startGame(); });
+        document.getElementById('startBtn').addEventListener('click', startGame);
+    };
+
+    function startGame() {
+        const lName = document.getElementById('lastName').value.trim();
+        const fName = document.getElementById('firstName').value.trim();
+        
+        if(lName === "" || fName === "") {
+            alert("Pakilagay ang iyong Last Name at First Name bago magsimula.");
+            return;
+        }
+        
+        playerName = `${lName}, ${fName}`;
+        localStorage.setItem('vid_last_name', lName); 
+        localStorage.setItem('vid_first_name', fName); 
+
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'flex';
+        
+        saveScoreToFirebase(0);
+        
+        shuffledData = [...masterData].sort(() => Math.random() - 0.5);
+        currentQuestionIndex = 0;
+        
+        loadQuestion();
+    }
+
+    function saveScoreToFirebase(score) {
+        const dbRef = ref(db);
+        get(child(dbRef, `leaderboard/${deviceId}`)).then((snapshot) => {
+            let currentBest = 0;
+            if (snapshot.exists()) {
+                currentBest = snapshot.val().best_score;
+            }
+            if (score >= currentBest) {
+                set(ref(db, 'leaderboard/' + deviceId), {
+                    name: playerName,
+                    best_score: score
+                });
+            }
+        }).catch((error) => {
+            console.error("Error saving score:", error);
+        });
+    }
+
+    onValue(ref(db, 'leaderboard'), (snapshot) => {
+        const data = snapshot.val();
+        const lbContainer = document.getElementById('leaderboard');
+        lbContainer.innerHTML = '';
+        
+        if (data) {
+            const users = Object.values(data);
+            users.sort((a, b) => b.best_score - a.best_score);
+            
+            users.slice(0, 10).forEach((user, index) => {
+                const li = document.createElement('li');
+                if(user.name === playerName) li.style.color = "#ffeb3b"; 
+                li.innerHTML = `<span>${index + 1}. ${user.name}</span> <span class="score">${user.best_score} pt</span>`;
+                lbContainer.appendChild(li);
+            });
+        } else {
+            lbContainer.innerHTML = '<li>Wala pang nakakapaglaro.</li>';
+        }
+    });
+
+    function loadQuestion() {
+        const currentData = shuffledData[currentQuestionIndex]; 
+        
+        document.getElementById('progressText').innerText = `Tanong ${currentQuestionIndex + 1} / ${shuffledData.length}`;
+        document.getElementById('questionText').innerText = `${currentData.vid}. Anong talata ang nagsasabi ng:\n\n"${currentData.text}"`;
+
+        let uniqueRefs = [...new Set(masterData.map(item => item.ref))];
+        uniqueRefs = uniqueRefs.filter(ref => ref !== currentData.ref);
+        uniqueRefs.sort(() => Math.random() - 0.5);
+
+        let options = [currentData.ref, ...uniqueRefs.slice(0, 3)];
+        options.sort(() => Math.random() - 0.5);
+
+        const optionsContainer = document.getElementById('optionsContainer');
+        optionsContainer.innerHTML = '';
+        options.forEach(option => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = option;
+            btn.addEventListener('click', () => checkAnswer(btn, currentData.ref));
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedBtn, correctRef) {
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(btn => btn.disabled = true);
+
+        if(selectedBtn.innerText === correctRef) {
+            selectedBtn.classList.add('correct');
+            myScore += 10; 
+            document.getElementById('scoreText').innerText = myScore;
+            saveScoreToFirebase(myScore);
+        } else {
+            selectedBtn.classList.add('wrong');
+            allBtns.forEach(btn => {
+                if(btn.innerText === correctRef) {
+                    btn.classList.add('correct');
+                }
+            });
+        }
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if(currentQuestionIndex < shuffledData.length) {
+                loadQuestion();
+            } else {
+                document.getElementById('questionText').innerText = "Tapos na ang Quiz!";
+                const tryBtn = document.createElement('button');
+                tryBtn.className = 'option-btn correct';
+                tryBtn.style.textAlign = 'center';
+                tryBtn.style.fontWeight = 'bold';
+                tryBtn.innerText = '🔄 Try Again';
+                tryBtn.addEventListener('click', restartQuiz);
+                
+                const container = document.getElementById('optionsContainer');
+                container.innerHTML = '';
+                container.appendChild(tryBtn);
+            }
+        }, 1500);
+    }
+
+    function restartQuiz() {
+        myScore = 0; 
+        currentQuestionIndex = 0; 
+        document.getElementById('scoreText').innerText = myScore;
+        shuffledData = [...masterData].sort(() => Math.random() - 0.5);
+        loadQuestion(); 
+    }
+</script>
+</body>
+</html>
